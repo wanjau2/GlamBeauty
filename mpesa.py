@@ -7,10 +7,7 @@ from flask import Blueprint, request, jsonify
 mpesa_bp = Blueprint('mpesa', __name__, url_prefix='/api/mpesa')
 
 # M-Pesa API credentials
-CONSUMER_KEY = i7zGAABbKUU5x8KnDUqty7cJcuOFwS8REKePF7HnNG2J2yAE
-CONSUMER_SECRET = P4y1g6xaIUhNGBPxjDYclmTN7tlagiSwgAalrOJm9J9FkyK9do9vfSagLStp9xil
-BUSINESS_SHORT_CODE = 174379  # Paybill or Till number
-PASSKEY = bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919
+
 CALLBACK_URL = "https://yourdomain.com/api/mpesa/callback"
 
 # Get access token
