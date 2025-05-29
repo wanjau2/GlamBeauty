@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+
+{% block title %}Leave a Review - Beauty E-commerce{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="mb-4">
+                <a href="{{ url_for('profile_appointments') }}" class="text-decoration-none">
+                    <i class="bi bi-arrow-left me-2"></i> Back to Appointments
+                </a>
+            </div>
+            
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">Leave a Review</h4>
+                    <p class="text-muted mb-0">Share your experience with {{ appointment['service_name'] }} at {{ appointment.location_type|default('Main Salon, Nairobi') }}</p>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="me-3">
+                                <i class="bi bi-calendar-check text-primary" style="font-size: 1.5rem;"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">{{ appointment['service_name'] }}</h5>
+                                <p class="text-muted mb-0">{{ appointment['date'] }} at {{ appointment['time'] }}</p>
+                                <div class="d-flex align-items-center text-muted mt-2">
+                                    <i class="bi bi-geo-alt me-2"></i>
+                                    <span>
+                                        {% if appointment.location_type == 'salon' %}
+                                            Salon
+                                        {% else %}
+                                            Home Service
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div class="d-flex align-items-center text-muted mt-1">
+                                    <i class="bi bi-person me-2"></i>
+                                    <span>Stylist: {{ appointment.stylist_name }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <form action="{{ url_for('leave_review', appointment_id=appointment._id) }}" method="post">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="mb-4">
+                            <label class="form-label">How would you rate your experience?</label>
+                            <div class="rating-stars mb-2">
+                                <div class="d-flex">
+                                    {% for i in range(1, 6) %}
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input visually-hidden" type="radio" name="rating" id="rating{{ i }}" value="{{ i }}" {% if i == 5 %}checked{% endif %}>
+                                        <label class="form-check-label star-label" for="rating{{ i }}">
+                                            <i class="bi bi-star-fill fs-3"></i>
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="review_title" class="form-label">Title</label>
+                            <input type="text" class="form-control" id="review_title" name="title" placeholder="Summarize your experience" required>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="review_content" class="form-label">Your Review</label>
+                            <textarea class="form-control" id="review_content" name="content" rows="5" placeholder="Tell us about your experience" required></textarea>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="recommend" name="recommend" checked>
+                                <label class="form-check-label" for="recommend">
+                                    I would recommend this service to others
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Submit Review</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .rating-stars .star-label {
+        color: #ccc;
+        cursor: pointer;
+        padding: 0 5px;
+    }
+    
+    .rating-stars .form-check-input:checked ~ .star-label,
+    .rating-stars .form-check-input:checked + .star-label {
+        color: #ffc107;
+    }
+    
+    /* Star hover effect */
+    .rating-stars .star-label:hover,
+    .rating-stars .star-label:hover ~ .star-label {
+        color: #ffc107;
+    }
+    
+    /* Fix for star rating display */
+    .rating-stars .form-check {
+        padding-left: 0;
+    }
+    
+    .rating-stars .form-check-inline {
+        margin-right: 0;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize star rating
+        const stars = document.querySelectorAll('.star-label');
+        const radioInputs = document.querySelectorAll('input[name="rating"]');
+        
+        // Function to update star colors based on selected rating
+        function updateStars(selectedRating) {
+            stars.forEach(star => {
+                const starValue = parseInt(star.previousElementSibling.value);
+                if (starValue <= selectedRating) {
+                    star.style.color = '#ffc107'; // Highlight stars up to selected rating
+                } else {
+                    star.style.color = '#ccc'; // Gray out stars above selected rating
+                }
+            });
+        }
+        
+        // Set initial star colors based on default selection
+        let initialRating = 5; // Default to 5 stars
+        radioInputs.forEach(input => {
+            if (input.checked) {
+                initialRating = parseInt(input.value);
+            }
+        });
+        updateStars(initialRating);
+        
+        // Add click event to each star
+        stars.forEach(star => {
+            star.addEventListener('click', function() {
+                const ratingValue = parseInt(this.previousElementSibling.value);
+                
+                // Set the radio button as checked
+                this.previousElementSibling.checked = true;
+                
+                // Update star colors
+                updateStars(ratingValue);
+            });
+            
+            // Add hover effects
+            star.addEventListener('mouseover', function() {
+                const ratingValue = parseInt(this.previousElementSibling.value);
+                
+                // Temporarily highlight stars on hover
+                stars.forEach(s => {
+                    const starValue = parseInt(s.previousElementSibling.value);
+                    if (starValue <= ratingValue) {
+                        s.style.color = '#ffc107';
+                    } else {
+                        s.style.color = '#ccc';
+                    }
+                });
+            });
+            
+            // Reset to selected rating when mouse leaves
+            star.addEventListener('mouseout', function() {
+                let selectedRating = 0;
+                radioInputs.forEach(input => {
+                    if (input.checked) {
+                        selectedRating = parseInt(input.value);
+                    }
+                });
+                updateStars(selectedRating);
+            });
+        });
+        
+        // Ensure form submission works correctly
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function(e) {
+            // Add any additional validation if needed
+            
+            // Form will submit normally if validation passes
+        });
+    });
+</script>
+{% endblock %}

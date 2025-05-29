@@ -1,0 +1,254 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Manage Appointments - Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="h3 mb-4 text-gray-800">Manage Appointments</h1>
+    
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <!-- Calendar View Toggle -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">Appointments</h6>
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-outline-primary active" id="listViewBtn">
+                    <i class="fas fa-list"></i> List View
+                </button>
+                <button type="button" class="btn btn-outline-primary" id="calendarViewBtn">
+                    <i class="fas fa-calendar-alt"></i> Calendar View
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- List View -->
+    <div id="listView" class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">Appointments List</h6>
+            <div class="dropdown">
+                <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-filter"></i> Filter
+                </button>
+                <div class="dropdown-menu dropdown-menu-right">
+                    <a class="dropdown-item" href="{{ url_for('admin_appointments') }}">All Appointments</a>
+                    <a class="dropdown-item" href="{{ url_for('admin_appointments', status='pending') }}">Pending</a>
+                    <a class="dropdown-item" href="{{ url_for('admin_appointments', status='confirmed') }}">Confirmed</a>
+                    <a class="dropdown-item" href="{{ url_for('admin_appointments', status='completed') }}">Completed</a>
+                    <a class="dropdown-item" href="{{ url_for('admin_appointments', status='cancelled') }}">Cancelled</a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="{{ url_for('admin_appointments', date='today') }}">Today</a>
+                    <a class="dropdown-item" href="{{ url_for('admin_appointments', date='tomorrow') }}">Tomorrow</a>
+                    <a class="dropdown-item" href="{{ url_for('admin_appointments', date='week') }}">This Week</a>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if appointments %}
+            <div class="table-responsive">
+                <table class="table table-bordered" id="appointmentsTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Customer</th>
+                            <th>Service</th>
+                            <th>Date & Time</th>
+                            <th>Location</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for appt in appointments %}
+                        <tr>
+                            <td>{{ appt._id }}</td>
+                            <td>{{ appt.customer_name }}</td>
+                            <td>{{ appt.service_name }}</td>
+                            <td>{{ appt.appointment_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>{{ appt.location_type|capitalize }} {% if appt.location %}- {{ appt.location }}{% endif %}</td>
+                            <td>
+                                <span class="badge {% if appt.status == 'confirmed' %}bg-success{% elif appt.status == 'pending' %}bg-warning text-dark{% elif appt.status == 'cancelled' %}bg-danger{% elif appt.status == 'completed' %}bg-info{% else %}bg-secondary{% endif %}">
+                                    {{ appt.status|capitalize }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-sm btn-primary dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+                                        Actions
+                                    </button>
+                                    <div class="dropdown-menu">
+                                        <button class="dropdown-item view-appointment" data-id="{{ appt._id }}">
+                                            <i class="fas fa-eye fa-sm fa-fw mr-2 text-gray-400"></i> View Details
+                                        </button>
+                                        <div class="dropdown-divider"></div>
+                                        <form action="{{ url_for('admin_update_appointment_status', appointment_id=appt._id) }}" method="post" class="d-inline">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="status" value="confirmed">
+                                            <button type="submit" class="dropdown-item">
+                                                <i class="fas fa-check fa-sm fa-fw mr-2 text-success"></i> Confirm
+                                            </button>
+                                        </form>
+                                        <form action="{{ url_for('admin_update_appointment_status', appointment_id=appt._id) }}" method="post" class="d-inline">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="status" value="completed">
+                                            <button type="submit" class="dropdown-item">
+                                                <i class="fas fa-check-double fa-sm fa-fw mr-2 text-info"></i> Mark Completed
+                                            </button>
+                                        </form>
+                                        <form action="{{ url_for('admin_update_appointment_status', appointment_id=appt._id) }}" method="post" class="d-inline">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="status" value="cancelled">
+                                            <button type="submit" class="dropdown-item">
+                                                <i class="fas fa-times fa-sm fa-fw mr-2 text-danger"></i> Cancel
+                                            </button>
+                                        </form>
+                                        <div class="dropdown-divider"></div>
+                                        <form action="{{ url_for('admin_delete_appointment', appointment_id=appt._id) }}" method="post" class="d-inline delete-form">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="dropdown-item">
+                                                <i class="fas fa-trash fa-sm fa-fw mr-2 text-danger"></i> Delete
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <p>No appointments found.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Calendar View (Add this section) -->
+    <div id="calendarView" class="card shadow mb-4" style="display: none;">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Calendar View</h6>
+        </div>
+        <div class="card-body">
+            <div id="appointmentCalendar"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Appointment Details Modal -->
+<div class="modal fade" id="appointmentDetailsModal" tabindex="-1" role="dialog" aria-labelledby="appointmentDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="appointmentDetailsModalLabel">Appointment Details</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+                        Update Status
+                    </button>
+                    <div class="dropdown-menu">
+                        <form id="confirmAppointmentForm" action="" method="post">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="status" value="confirmed">
+                            <button type="submit" class="dropdown-item">Confirm</button>
+                        </form>
+                        <form id="completeAppointmentForm" action="" method="post">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="status" value="completed">
+                            <button type="submit" class="dropdown-item">Mark Completed</button>
+                        </form>
+                        <form id="cancelAppointmentForm" action="" method="post">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="status" value="cancelled">
+                            <button type="submit" class="dropdown-item">Cancel</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.0/main.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.0/main.min.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // View toggle functionality
+        const listViewBtn = document.getElementById('listViewBtn');
+        const calendarViewBtn = document.getElementById('calendarViewBtn');
+        const listView = document.getElementById('listView');
+        const calendarView = document.getElementById('calendarView');
+        
+        listViewBtn.addEventListener('click', function() {
+            listView.style.display = 'block';
+            calendarView.style.display = 'none';
+            listViewBtn.classList.add('active');
+            calendarViewBtn.classList.remove('active');
+        });
+        
+        calendarViewBtn.addEventListener('click', function() {
+            listView.style.display = 'none';
+            calendarView.style.display = 'block';
+            listViewBtn.classList.remove('active');
+            calendarViewBtn.classList.add('active');
+            
+            // Trigger resize to ensure calendar renders correctly
+            window.dispatchEvent(new Event('resize'));
+        });
+        
+        // Initialize FullCalendar
+        const calendarEl = document.getElementById('appointmentCalendar');
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            },
+            events: "{{ url_for('admin_appointments_calendar_data') }}",
+            eventTimeFormat: {
+                hour: '2-digit',
+                minute: '2-digit',
+                meridiem: 'short'
+            },
+            eventClick: function(info) {
+                if (info.event.url) {
+                    window.location.href = info.event.url;
+                    return false;
+                }
+            }
+        });
+        
+        calendar.render();
+    });
+</script>
+{% endblock %}
+{% endblock %}

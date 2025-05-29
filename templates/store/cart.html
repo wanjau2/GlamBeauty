@@ -1,0 +1,441 @@
+{% extends "base.html" %}
+
+{% block title %}Your Cart - GlamBeauty{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Cart Container */
+    .cart-container {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+    }
+    
+    @media (min-width: 992px) {
+        .cart-container {
+            flex-direction: row;
+        }
+        
+        .cart-items-container {
+            flex: 1;
+        }
+        
+        .order-summary {
+            width: 380px;
+        }
+    }
+    
+    /* Cart Items */
+    .cart-items-container {
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        padding: 1.5rem;
+    }
+    
+    .cart-item {
+        display: flex;
+        align-items: center;
+        padding: 1.5rem 0;
+        border-bottom: 1px solid rgba(0,0,0,0.1);
+    }
+    
+    .cart-item:last-child {
+        border-bottom: none;
+    }
+    
+    .cart-item-image {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 5px;
+        margin-right: 1rem;
+    }
+    
+    .cart-item-details {
+        display: flex;
+        align-items: center;
+        flex: 1;
+    }
+    
+    .cart-item-info {
+        margin-left: 1rem;
+    }
+    
+    .cart-item-info h4 {
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+    
+    .quantity-controls {
+        display: flex;
+        align-items: center;
+        margin: 0 2rem;
+    }
+    
+    .quantity-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        border: 1px solid rgba(0,0,0,0.1);
+        background-color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 1.25rem;
+        line-height: 1;
+    }
+    
+    .quantity-input {
+        width: 40px;
+        text-align: center;
+        border: none;
+        font-size: 1rem;
+        margin: 0 0.5rem;
+    }
+    
+    .item-price {
+        font-weight: 500;
+        margin-right: 1rem;
+    }
+    
+    .remove-btn {
+        background: none;
+        border: none;
+        color: #dc3545;
+        cursor: pointer;
+        font-size: 1.25rem;
+    }
+    
+    /* Order Summary */
+    .order-summary {
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        padding: 1.5rem;
+    }
+    
+    .summary-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+    }
+    
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+    
+    .summary-total {
+        display: flex;
+        justify-content: space-between;
+        font-weight: 600;
+        font-size: 1.1rem;
+        margin: 1.5rem 0;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(0,0,0,0.1);
+    }
+    
+    .shipping-note {
+        color: #6c757d;
+        font-size: 0.875rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .checkout-btn {
+        display: block;
+        width: 100%;
+        background-color: #ff6b81;
+        color: white;
+        text-align: center;
+        padding: 0.75rem;
+        border-radius: 5px;
+        text-decoration: none;
+        font-weight: 500;
+        margin-bottom: 1rem;
+        transition: background-color 0.2s;
+    }
+    
+    .checkout-btn:hover {
+        background-color: #ff5268;
+        color: white;
+    }
+    
+    .pay-later-btn {
+        display: block;
+        width: 100%;
+        background-color: transparent;
+        border: 1px solid #dee2e6;
+        color: #212529;
+        text-align: center;
+        padding: 0.75rem;
+        border-radius: 5px;
+        text-decoration: none;
+        font-weight: 500;
+        margin-bottom: 1rem;
+        transition: background-color 0.2s;
+    }
+    
+    .pay-later-btn:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .security-note {
+        color: #6c757d;
+        font-size: 0.875rem;
+        text-align: center;
+    }
+    
+    /* Empty Cart */
+    .empty-cart {
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        padding: 3rem;
+    }
+    
+    /* Hide number input arrows */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+        -webkit-appearance: none; 
+        margin: 0; 
+    }
+    input[type=number] {
+        -moz-appearance: textfield;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="mb-4">Your Cart</h1>
+
+    {% if products and products|length > 0 %}
+    <div class="cart-container">
+        <div class="cart-items-container">
+            {% for product in products %}
+            <div class="cart-item" data-product-id="{{ product.id }}">
+                <div class="cart-item-details">
+                    <img src="{{ url_for('static', filename='uploads/' + product.image) }}" alt="{{ product.name }}" class="cart-item-image">
+                    <div class="cart-item-info">
+                        <h4>{{ product.name }}</h4>
+                        <div class="price">{{ product.price|format_currency }}</div>
+                    </div>
+                </div>
+
+                <div class="quantity-controls">
+                    <form action="{{ url_for('update_cart') }}" method="POST" class="d-flex align-items-center quantity-form-standard">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="product_id" value="{{ product.id }}">
+                        <button type="button" class="quantity-btn decrease-btn-standard" data-product-id="{{ product.id }}">-</button>
+                        <input type="number" name="quantity" value="{{ product.quantity }}" min="1" max="99" class="quantity-input quantity-input-standard" id="quantity-standard-{{ product.id }}">
+                        <button type="button" class="quantity-btn increase-btn-standard" data-product-id="{{ product.id }}">+</button>
+                        <button type="submit" class="update-cart-btn d-none">Update</button>
+                    </form>
+                </div>
+
+                <div class="item-price">
+                    {{ product.subtotal|format_currency }}
+                </div>
+
+                <form action="{{ url_for('remove_from_cart') }}" method="POST" class="remove-form-standard">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="product_id" value="{{ product.id }}">
+                    <button class="remove-btn remove-btn-standard" type="submit">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="order-summary">
+            <h3 class="summary-title">Order Summary</h3>
+
+            <div class="summary-row">
+                <span class="summary-label">Subtotal</span>
+                <span class="summary-value">{{ total|format_currency }}</span>
+            </div>
+
+            <div class="summary-row">
+                <span class="summary-label">Shipping</span>
+                <span class="summary-value">{% if shipping > 0 %}{{ shipping|format_currency }}{% else %}Free{% endif %}</span>
+            </div>
+
+            <div class="summary-total">
+                <span>Total</span>
+                <span>{{ (total + shipping)|format_currency }}</span>
+            </div>
+
+            <p class="shipping-note">(Free shipping on orders over $50)</p>
+
+            <a href="{{ url_for('checkout') }}" class="checkout-btn">
+                <i class="bi bi-credit-card"></i> Checkout
+            </a>
+
+            <a href="{{ url_for('shop') }}" class="pay-later-btn">
+                <i class="bi bi-arrow-left"></i> Continue Shopping
+            </a>
+
+            <p class="security-note">
+                <i class="bi bi-shield-lock"></i> Secure payment processing
+            </p>
+        </div>
+    </div>
+    {% else %}
+        <div class="empty-cart text-center py-5">
+            <i class="bi bi-cart-x" style="font-size: 4rem; color: var(--muted);"></i>
+            <h3 class="mt-4">Your cart is empty</h3>
+            <p class="text-muted mb-4">Looks like you haven't added any products to your cart yet.</p>
+            <a href="{{ url_for('shop') }}" class="btn btn-primary">Start Shopping</a>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- Standard Form Submission Logic ---
+        const decreaseBtnsStandard = document.querySelectorAll('.decrease-btn-standard');
+        const increaseBtnsStandard = document.querySelectorAll('.increase-btn-standard');
+
+        decreaseBtnsStandard.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const productId = this.getAttribute('data-product-id');
+                const inputField = document.getElementById(`quantity-standard-${productId}`);
+                let currentValue = parseInt(inputField.value);
+
+                if (currentValue > 1) {
+                    inputField.value = currentValue - 1;
+                    // Submit the form automatically
+                    this.closest('form.quantity-form-standard').submit();
+                }
+            });
+        });
+
+        increaseBtnsStandard.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const productId = this.getAttribute('data-product-id');
+                const inputField = document.getElementById(`quantity-standard-${productId}`);
+                let currentValue = parseInt(inputField.value);
+
+                inputField.value = currentValue + 1;
+                // Submit the form automatically
+                this.closest('form.quantity-form-standard').submit();
+            });
+        });
+
+        // Handle direct input changes for standard forms
+        const quantityInputsStandard = document.querySelectorAll('.quantity-input-standard');
+        quantityInputsStandard.forEach(input => {
+            input.addEventListener('change', function() {
+                // Submit the form when input value changes
+                this.closest('form.quantity-form-standard').submit();
+            });
+        });
+
+        // Handle remove buttons for standard forms
+        const removeFormsStandard = document.querySelectorAll('.remove-form-standard');
+        removeFormsStandard.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                if (!confirm('Are you sure you want to remove this item from your cart?')) {
+                    e.preventDefault();
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check stock availability for all items in cart
+        checkStockAvailability();
+    });
+
+    function checkStockAvailability() {
+        const cartItems = document.querySelectorAll('.cart-item');
+        let hasStockIssue = false;
+        const checkoutBtn = document.querySelector('.checkout-btn');
+
+        // Ensure checkout button exists before proceeding
+        if (!checkoutBtn) {
+            console.warn('Checkout button not found.');
+            return;
+        }
+
+        // Create an array of promises for all fetch requests
+        const stockCheckPromises = [];
+
+        cartItems.forEach(item => {
+            const productId = item.dataset.productId;
+            const quantityElement = item.querySelector('.quantity-input');
+            if (!quantityElement) return;
+
+            const quantity = parseInt(quantityElement.value);
+
+            // Create a promise for each fetch request
+            const promise = fetch(`/check-stock?product_id=${productId}&quantity=${quantity}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Remove any existing warnings first
+                    const existingWarning = item.querySelector('.stock-warning');
+                    if (existingWarning) {
+                        existingWarning.remove();
+                    }
+
+                    if (!data.available) {
+                        // Add warning to item
+                        const warningElement = document.createElement('div');
+                        warningElement.className = 'text-danger mt-2 stock-warning';
+                        warningElement.innerHTML = `<small><i class="bi bi-exclamation-triangle"></i> ${data.message || 'Stock issue detected'}</small>`;
+
+                        // Append warning after cart-item-info or details
+                        const detailsContainer = item.querySelector('.cart-item-info') || item.querySelector('.cart-item-details');
+                        if (detailsContainer) {
+                            detailsContainer.appendChild(warningElement);
+                        }
+
+                        // Flag that there's a stock issue
+                        hasStockIssue = true;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking stock for product', productId, ':', error);
+                    // Optionally display a generic error message to the user on the item
+                    const errorElement = document.createElement('div');
+                    errorElement.className = 'text-warning mt-2 stock-warning';
+                    errorElement.innerHTML = `<small><i class="bi bi-wifi-off"></i> Could not check stock</small>`;
+                    const detailsContainer = item.querySelector('.cart-item-info') || item.querySelector('.cart-item-details');
+                    if (detailsContainer && !item.querySelector('.stock-warning')) {
+                        detailsContainer.appendChild(errorElement);
+                    }
+                });
+
+            stockCheckPromises.push(promise);
+        });
+
+        // After all stock checks are complete, update checkout button state
+        Promise.allSettled(stockCheckPromises).then(() => {
+            if (hasStockIssue) {
+                checkoutBtn.classList.add('disabled');
+                checkoutBtn.href = '#';
+                checkoutBtn.setAttribute('title', 'Please resolve stock issues before checkout');
+                checkoutBtn.style.pointerEvents = 'none';
+            } else {
+                checkoutBtn.classList.remove('disabled');
+                checkoutBtn.href = "{{ url_for('checkout') }}";
+                checkoutBtn.removeAttribute('title');
+                checkoutBtn.style.pointerEvents = 'auto';
+            }
+        });
+    }
+</script>
+{% endblock %}

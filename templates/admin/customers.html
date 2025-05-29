@@ -1,0 +1,162 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Customer Management - Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="h3 mb-4 text-gray-800">Customer Management</h1>
+    
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <!-- Search and Filter Card -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Search & Filter</h6>
+        </div>
+        <div class="card-body">
+            <form action="{{ url_for('admin_users') }}" method="GET" class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="search">Search</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           placeholder="Name, Email or Phone" value="{{ request.args.get('search', '') }}">
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label for="sort">Sort By</label>
+                    <select class="form-control" id="sort" name="sort">
+                        <option value="name" {% if request.args.get('sort') == 'name' %}selected{% endif %}>Name</option>
+                        <option value="email" {% if request.args.get('sort') == 'email' %}selected{% endif %}>Email</option>
+                        <option value="created_at" {% if request.args.get('sort') == 'created_at' %}selected{% endif %}>Date Joined</option>
+                    </select>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label for="order">Order</label>
+                    <select class="form-control" id="order" name="order">
+                        <option value="asc" {% if request.args.get('order') == 'asc' %}selected{% endif %}>Ascending</option>
+                        <option value="desc" {% if request.args.get('order') == 'desc' %}selected{% endif %}>Descending</option>
+                    </select>
+                </div>
+                <div class="col-md-2 mb-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary btn-block">Apply</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Customers Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">Customers</h6>
+            <div>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="exportBtn">
+                    <i class="fas fa-file-export"></i> Export
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="customersTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Date Joined</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if users %}
+                            {% for user in users %}
+                            <tr>
+                                <td>{{ user.name }}</td>
+                                <td>{{ user.email }}</td>
+                                <td>{{ user.phone|default('Not provided') }}</td>
+                                <td>{{ user.created_at.strftime('%Y-%m-%d') if user.created_at else 'N/A' }}</td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{{ url_for('admin_user_details', user_id=user._id) }}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-danger delete-user" data-id="{{ user._id }}" data-name="{{ user.name }}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center">No customers found</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Customer Modal -->
+<div class="modal fade" id="deleteCustomerModal" tabindex="-1" role="dialog" aria-labelledby="deleteCustomerModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteCustomerModalLabel">Confirm Delete</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this customer? This action cannot be undone.</p>
+                <p><strong>Customer: </strong><span id="customerName"></span></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <form id="deleteCustomerForm" action="" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Initialize DataTable
+        $('#customersTable').DataTable({
+            "order": []
+        });
+        
+        // Delete Customer
+        $('.delete-user').click(function() {
+            const id = $(this).data('id');
+            const name = $(this).data('name');
+            
+            $('#customerName').text(name);
+            $('#deleteCustomerForm').attr('action', '/admin/users/' + id + '/delete');
+            $('#deleteCustomerModal').modal('show');
+        });
+        
+        // Export functionality (placeholder)
+        $('#exportBtn').click(function() {
+            alert('Export functionality will be implemented here');
+            // Implement export functionality or redirect to export route
+        });
+    });
+</script>
+{% endblock %}

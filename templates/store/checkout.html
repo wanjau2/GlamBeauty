@@ -1,0 +1,319 @@
+{% extends 'base.html' %}
+
+{% block title %}Checkout - Beauty E-commerce{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">Shipping Information</h4>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('checkout') }}" method="post">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label">Full Name</label>
+                                <input type="text" class="form-control" id="name" name="name" value="{{ user.name }}" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">Email Address</label>
+                                <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="phone" class="form-label">Phone Number</label>
+                                <input type="tel" class="form-control" id="phone" name="phone" placeholder="e.g. 0712345678" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="address" class="form-label">Address</label>
+                            <input type="text" class="form-control" id="address" name="address" required>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="county" class="form-label">County</label>
+                                <select class="form-select" id="county" name="county" required onchange="updateLocationOptions()">
+                                    <option value="">Select County</option>
+                                    {% for county_data in AVAILABLE_LOCATIONS %}
+                                    <option value="{{ county_data.county }}">{{ county_data.county }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="location" class="form-label">Specific Location</label>
+                                <select class="form-select" id="location" name="location" required onchange="updatePaymentOptions()">
+                                    <option value="">Select Location</option>
+                                    <!-- Will be populated dynamically based on selected county -->
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3" id="otherLocationDiv" style="display: none;">
+                            <label for="otherLocation" class="form-label">Specify Location</label>
+                            <input type="text" class="form-control" id="otherLocation" name="otherLocation">
+                        </div>
+                        
+                        <input type="hidden" name="payAfterDelivery" id="payAfterDelivery" value="false">
+                        
+                        <div class="card shadow-sm mb-4 mt-4">
+                            <div class="card-header bg-white">
+                                <h4 class="mb-0">Payment Method</h4>
+                                <div id="paymentNotice" class="alert alert-info mt-2" style="display: none;">
+                                    Based on your location, you can pay after delivery.
+                                </div>
+                                <div id="prepaymentNotice" class="alert alert-warning mt-2" style="display: none;">
+                                    Your location requires payment before delivery.
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-check mb-3" id="payLaterOption" style="display: none;">
+                                    <input class="form-check-input" type="radio" name="payment_method" id="pay_on_delivery" value="pay_on_delivery">
+                                    <label class="form-check-label" for="pay_on_delivery">
+                                        <i class="bi bi-cash-coin me-2"></i> Pay on Delivery
+                                    </label>
+                                    <div class="text-muted small mt-1">Pay with cash or mobile money when your order is delivered</div>
+                                </div>
+                                
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="radio" name="payment_method" id="mpesa" value="mpesa" checked>
+                                    <label class="form-check-label" for="mpesa">
+                                        <i class="bi bi-phone me-2"></i> M-Pesa
+                                    </label>
+                                    <div class="text-muted small mt-1">Pay securely with M-Pesa mobile money</div>
+                                </div>
+                                
+                                
+                        </div>
+                        
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">Place Order</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">Order Summary</h4>
+                </div>
+                <div class="card-body">
+                    {% for item in cart_items %}
+                    <div class="d-flex justify-content-between mb-3">
+                        <div>
+                            <h6 class="mb-0">{{ item.name }}</h6>
+                            <small class="text-muted">Qty: {{ item.quantity }}</small>
+                        </div>
+                        <span>${{ "%.2f"|format(item.total) }}</span>
+                    </div>
+                    {% endfor %}
+                    
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal</span>
+                        <span>KSH{{ "%.2f"|format(total) }}</span>
+                    </div>
+
+                    {# Calculate and display delivery fee using the context function #}
+                    {% set delivery_fee = calculate_delivery_fee(total) %}
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Shipping</span>
+                        <span>{% if delivery_fee == 0 %}Free{% else %}${{ "%.2f"|format(delivery_fee) }}{% endif %}</span>
+                    </div>
+
+                   
+
+                    <hr>
+
+                    {# Update total calculation to use the calculated delivery fee #}
+                    <div class="d-flex justify-content-between mb-2">
+                        <strong>Total</strong>
+                        <strong>KSH{{ "%.2f"|format(total + delivery_fee )}}</strong>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">Need Help?</h5>
+                    <p class="card-text">If you have any questions about your order, please contact our customer service.</p>
+                    <a href="{{ url_for('contact') }}" class="btn btn-outline-primary">Contact Us</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Pass AVAILABLE_LOCATIONS from Jinja to JavaScript
+    const availableLocationsData = {{ AVAILABLE_LOCATIONS|tojson }};
+
+    function updateLocationOptions() {
+        const countySelect = document.getElementById('county');
+        const locationSelect = document.getElementById('location');
+        const selectedCounty = countySelect.value;
+
+        // Clear existing location options (except the placeholder)
+        locationSelect.innerHTML = '<option value="">Select Location</option>';
+
+        if (selectedCounty && availableLocationsData) {
+            // Find the data for the selected county
+            const countyData = availableLocationsData.find(item => item.county === selectedCounty);
+            if (countyData && countyData.locations) {
+                // Populate locations, storing the pay_on_delivery flag if available
+                countyData.locations.forEach(loc => {
+                    const option = document.createElement('option');
+                    option.value = loc.name; // Use location name as value
+                    option.textContent = loc.name;
+                    // Store the flag directly on the option element using a data attribute
+                    if (loc.pay_on_delivery_allowed !== undefined) {
+                        option.dataset.payAllowed = loc.pay_on_delivery_allowed;
+                    }
+                    if (loc.home_service !== undefined) {
+                        option.dataset.homeService = loc.home_service;
+                    }
+                    locationSelect.appendChild(option);
+                });
+            }
+        }
+        // Add 'Other' option manually if needed
+        const otherOption = document.createElement('option');
+        otherOption.value = 'Other';
+        otherOption.textContent = 'Other (specify below)';
+        // 'Other' locations typically won't allow pay on delivery by default
+        otherOption.dataset.payAllowed = 'false';
+        otherOption.dataset.homeService = 'false';
+        locationSelect.appendChild(otherOption);
+
+        // Trigger payment options update after locations are updated
+        updatePaymentOptions();
+    }
+
+    function updatePaymentOptions() {
+        const countySelect = document.getElementById('county');
+        const locationSelect = document.getElementById('location');
+        const selectedLocationOption = locationSelect.options[locationSelect.selectedIndex];
+        const locationValue = selectedLocationOption.value; // e.g., "Nairobi CBD" or "Other"
+
+        const payLaterOption = document.getElementById('payLaterOption');
+        const paymentNotice = document.getElementById('paymentNotice');
+        const prepaymentNotice = document.getElementById('prepaymentNotice');
+        const payAfterDeliveryInput = document.getElementById('payAfterDelivery');
+        const homeServiceSection = document.getElementById('homeServiceSection');
+
+        // Show "Other Location" input if "Other" is selected
+        if (locationValue === 'Other') {
+            document.getElementById('otherLocationDiv').style.display = 'block';
+        } else {
+            document.getElementById('otherLocationDiv').style.display = 'none';
+        }
+
+        // Check if pay after delivery is allowed based on the data attribute
+        // Default to false if the attribute is missing or the value is not 'true'
+        const canPayAfterDelivery = selectedLocationOption.dataset.payAllowed === 'true';
+        
+        // Check if home service is available for this location
+        const hasHomeService = selectedLocationOption.dataset.homeService === 'true';
+        
+        // Update home service section visibility
+        if (homeServiceSection) {
+            homeServiceSection.style.display = hasHomeService ? 'block' : 'none';
+        }
+
+        // Update delivery fee based on location
+        updateDeliveryFee(countySelect.value, locationValue);
+
+        if (canPayAfterDelivery) {
+            // Enable pay on delivery option
+            payLaterOption.style.display = 'block';
+            paymentNotice.style.display = 'block';
+            prepaymentNotice.style.display = 'none';
+            payAfterDeliveryInput.value = 'true';
+
+            // Select pay on delivery if no payment method is currently selected or if M-Pesa was default
+            const currentPaymentMethod = document.querySelector('input[name="payment_method"]:checked');
+            if (!currentPaymentMethod || currentPaymentMethod.id === 'mpesa') {
+                 // Check if pay_on_delivery element exists before trying to check it
+                 const payOnDeliveryRadio = document.getElementById('pay_on_delivery');
+                 if (payOnDeliveryRadio) {
+                    payOnDeliveryRadio.checked = true;
+                 }
+            }
+        } else {
+            // Disable pay on delivery option
+            payLaterOption.style.display = 'none';
+            paymentNotice.style.display = 'none';
+            // Show prepayment notice only if a location is actually selected
+            prepaymentNotice.style.display = locationValue ? 'block' : 'none';
+            payAfterDeliveryInput.value = 'false';
+
+            // If pay_on_delivery was selected, switch to M-Pesa
+            const payOnDeliveryRadio = document.getElementById('pay_on_delivery');
+            if (payOnDeliveryRadio && payOnDeliveryRadio.checked) {
+                // Check if mpesa element exists before trying to check it
+                const mpesaRadio = document.getElementById('mpesa');
+                if (mpesaRadio) {
+                    mpesaRadio.checked = true;
+                }
+            }
+        }
+    }
+    
+    function updateDeliveryFee(county, location) {
+        // Get the delivery fee element
+        const deliveryFeeElement = document.getElementById('delivery-fee');
+        const totalElement = document.getElementById('order-total');
+        const subtotalElement = document.getElementById('order-subtotal');
+        
+        if (!deliveryFeeElement || !county || !location) return;
+        
+        // Check if location qualifies for free delivery
+        let deliveryFee = {{ STANDARD_DELIVERY_FEE }};
+        
+        // Free delivery for entire counties
+        const freeDeliveryCounties = {{ FREE_DELIVERY_COUNTIES|tojson }};
+        if (freeDeliveryCounties.includes(county)) {
+            deliveryFee = 0;
+        }
+        
+        // Free delivery for specific locations
+        const freeDeliveryLocations = {{ FREE_DELIVERY_LOCATIONS|tojson }};
+        if (freeDeliveryLocations[county] && freeDeliveryLocations[county].includes(location)) {
+            deliveryFee = 0;
+        }
+        
+        // Update the delivery fee display
+        deliveryFeeElement.textContent = 'KSh ' + deliveryFee.toFixed(2);
+        
+        // Update the total if subtotal is available
+        if (subtotalElement && totalElement) {
+            const subtotal = parseFloat(subtotalElement.dataset.value || 0);
+            const tax = subtotal * 0.16; // 16% tax
+            const total = subtotal + tax + deliveryFee;
+            totalElement.textContent = 'KSh ' + total.toFixed(2);
+        }
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set up event listeners
+        document.getElementById('county').addEventListener('change', updateLocationOptions); // Update locations first
+        document.getElementById('location').addEventListener('change', updatePaymentOptions);
+
+        // Initial population of locations based on default/selected county (if any)
+        updateLocationOptions();
+    });
+</script>
+{% endblock %}

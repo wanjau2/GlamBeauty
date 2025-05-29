@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointment Confirmation - GlamBeauty</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            background-color: #f8f9fa;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #e97fa3;
+        }
+        .content {
+            padding: 20px 0;
+        }
+        .appointment-details {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #e97fa3;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px 0;
+            font-size: 12px;
+            color: #6c757d;
+            border-top: 1px solid #e9ecef;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">GlamBeauty</div>
+        </div>
+        
+        <div class="content">
+            <h1>Appointment Confirmation</h1>
+            
+            <p>Hello {{ user.name }},</p>
+            
+            <p>Your appointment has been scheduled for {{ appointment_datetime.strftime('%A, %B %d, %Y at %I:%M %p') }}.</p>
+            
+            <div class="appointment-details">
+                <h3>Appointment Details</h3>
+                <p><strong>Service:</strong> {{ appointment.service_name }}</p>
+                <p><strong>Type:</strong> {% if appointment.location_type == 'home' %}Home Service{% else %}Salon Visit{% endif %}</p>
+                
+                {% if appointment.location_type == 'home' %}
+                <p><strong>Location:</strong> {{ appointment.address }}</p>
+                <p><strong>Home Service Fee:</strong> KES {{ "%.2f"|format(appointment.home_service_fee) }}</p>
+                {% endif %}
+                
+                <p><strong>Base Price:</strong> KES {{ "%.2f"|format(appointment.service_price) }}</p>
+                <p><strong>Total Est. Price:</strong> KES {{ "%.2f"|format(appointment.total_price) }}</p>
+                <p><strong>Notes:</strong> {{ appointment.notes if appointment.notes else 'None' }}</p>
+            </div>
+            
+            <p>You can view your appointment details here: <a href="{{ url_for('profile_appointments', _external=True) }}">My Appointments</a></p>
+            
+            {% if calendar_event and calendar_event.event_link %}
+            <p>We've added this appointment to your Google Calendar. <a href="{{ calendar_event.event_link }}" target="_blank">View in Google Calendar</a></p>
+            {% endif %}
+            
+            <p><a href="{{ url_for('reschedule_appointment', appointment_id=appointment._id, _external=True) }}" class="button">Reschedule Appointment</a></p>
+        </div>
+        
+        <div class="footer">
+            <p>Best regards,<br>GlamBeauty Team</p>
+            <p>&copy; {{ current_year }} GlamBeauty. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

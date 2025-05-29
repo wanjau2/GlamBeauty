@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}Reschedule Appointment - GlamBeauty{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="mb-4">
+        <a href="{{ url_for('profile') }}" class="text-decoration-none">
+            <i class="bi bi-arrow-left me-2"></i> Back to Appointments
+        </a>
+    </div>
+    
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <h4 class="mb-0">Reschedule Appointment</h4>
+            <p class="text-muted mb-0">Select a new date and time for your appointment</p>
+        </div>
+        <div class="card-body">
+            <div class="mb-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="me-3">
+                        <i class="bi bi-calendar-check text-primary" style="font-size: 1.5rem;"></i>
+                    </div>
+                    <div>
+                        <h5 class="mb-0">{{ appointment.service_name }}</h5>
+                        <p class="text-muted mb-0">Current: {{ appointment.appointment_date.strftime('%d %B, %Y') }} at {{ appointment.time }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <form method="POST" action="{{ url_for('reschedule_appointment_post', appointment_id=appointment._id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="date" class="form-label">New Date</label>
+                        <input type="date" class="form-control" id="date" name="date" required min="{{ today.strftime('%Y-%m-%d') }}">
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="time" class="form-label">New Time</label>
+                        <select class="form-select" id="time" name="time" required>
+                            <option value="" disabled selected>Select a time</option>
+                            <option value="09:00">09:00 AM</option>
+                            <option value="10:00">10:00 AM</option>
+                            <option value="11:00">11:00 AM</option>
+                            <option value="12:00">12:00 PM</option>
+                            <option value="13:00">01:00 PM</option>
+                            <option value="14:00">02:00 PM</option>
+                            <option value="15:00">03:00 PM</option>
+                            <option value="16:00">04:00 PM</option>
+                            <option value="17:00">05:00 PM</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <small>Rescheduling is free if done at least 24 hours before your appointment. Late rescheduling may incur a fee.</small>
+                </div>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                    <a href="{{ url_for('profile') }}" class="btn btn-outline-secondary me-md-2">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Reschedule Appointment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set minimum date to today
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const formattedDate = `${yyyy}-${mm}-${dd}`;
+        
+        document.getElementById('date').setAttribute('min', formattedDate);
+    });
+</script>
+{% endblock %}

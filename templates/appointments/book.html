@@ -1,0 +1,764 @@
+{% extends "base.html" %}
+{% block title %}Book Appointment{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8">
+            <h1 class="mb-4">Book Your Appointment</h1>
+            
+            <form method="POST" id="appointment-form">
+                {{ form.csrf_token }}
+                <input type="hidden" id="service_id" name="service_id" value="{{ form.service_id.data or '' }}">
+                <input type="hidden" id="service_field" name="service" value="">
+                <input type="hidden" id="payment_completed" name="payment_completed" value="false">
+                <input type="hidden" id="transaction_id" name="transaction_id" value="">
+                
+                <!-- Service Selection -->
+                <div class="mb-4">
+                    <h5>Select Service</h5>
+                    <div class="row row-cols-1 row-cols-md-2 g-3 service-selector">
+                        {% for service in services %}
+                        <div class="col">
+                            <div class="service-option card h-100 {% if selected_service and selected_service._id|string == service._id|string %}selected{% endif %}" 
+                                 data-service-id="{{ service._id }}">
+                                <div class="card-body">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="service_id" 
+                                               id="service_{{ service._id }}" 
+                                               value="{{ service._id }}" 
+                                               data-duration="{{ service.duration }}" 
+                                               data-service-name="{{ service.name }}"
+                                               data-price="{{ service.price }}"
+                                               {% if selected_service and selected_service._id|string == service._id|string %}checked{% endif %}>
+                                        <label class="form-check-label" for="service_{{ service._id }}">
+                                            <span>{{ service.name }}</span>
+                                            <span class="ms-auto">KSH {{ service.price }}</span>
+                                        </label>
+                                    </div>
+                                    <div class="service-details mt-2">
+                                        <span class="ms-auto"> Duration: {{ service.duration }} min</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Date Selection -->
+                <div class="mb-4">
+                    <h5>Select Date</h5>
+                    <input type="date" id="appointment_date" name="date" class="form-control" min="{{ today_date }}" required>
+                </div>
+                
+                <!-- Time Selection -->
+                <div class="mb-4">
+                    <h5>Select Time</h5>
+                    <div class="time-selector" id="time-selector">
+                        {% for time_value, time_display in form.time.choices %}
+                            <div class="time-option{% if time_value in unavailable_slots %} disabled{% endif %}" 
+                                 data-time="{{ time_value }}"
+                                 data-display="{{ time_display }}"
+                                 {% if time_value in unavailable_slots %}title="Not available"{% endif %}>
+                                {{ time_display }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <input type="hidden" id="selected_time" name="time" value="">
+                </div>
+                
+                <!-- Location Selection -->
+                <div class="mb-4">
+                    <h5>Service Location</h5>
+                    <div class="mb-3">
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="location_type" id="location_salon" value="salon" checked>
+                            <label class="form-check-label" for="location_salon">Salon Visit</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="location_type" id="location_home" value="home">
+                            <label class="form-check-label" for="location_home">Home Service</label>
+                        </div>
+                    </div>
+                    
+                    <div id="home-service-options" style="display: none;">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="county" class="form-label">County</label>
+                                <select class="form-select" id="county" name="county">
+                                    <option value="">Select County</option>
+                                    {% for county_value, county_label in form.county.choices %}
+                                        {% if county_value %}
+                                            <option value="{{ county_value }}">{{ county_label }}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="location" class="form-label">Location/Sub-county</label>
+                                <select class="form-select" id="location" name="location">
+                                    <option value="">Select Location</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label for="address" class="form-label">Full Address</label>
+                                <textarea class="form-control" id="address" name="address" rows="3" placeholder="Enter your street, building, house number etc."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Notes -->
+                <div class="mb-4">
+                    <h5>Additional Notes</h5>
+                    <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Any specific requests or information?"></textarea>
+                </div>
+                <div class="mb-4 form-check">
+                    <input type="checkbox" class="form-check-input" id="add_to_calendar" name="add_to_calendar" checked>
+                    <label class="form-check-label" for="add_to_calendar">Add this appointment to my Google Calendar</label>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" id="submit-button">Confirm Booking</button>
+            </form>
+        </div>
+        
+        <!-- Booking Summary and Payment Section -->
+        <div class="col-lg-4">
+            <!-- Combined Booking Summary and Payment -->
+            <div class="card sticky-top" style="top: 20px;">
+                <div class="card-header">
+                    <h5 class="mb-0">Booking Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Service:</strong> <span id="summary-service">Select a service</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Date:</strong> <span id="summary-date">Select a date</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Time:</strong> <span id="summary-time">Select a time</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Location:</strong> <span id="summary-location">Salon Visit</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Service Price:</span>
+                        <span id="summary-price">KSH 0</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2" id="home-service-fee-row" style="display: none;">
+                        <span>Home Service Fee:</span>
+                        <span class="home-service-fee">KSH <span id="home-service-fee-amount">0</span></span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2" id="deposit-row" style="display: none;">
+                        <span>Required Deposit (50%):</span>
+                        <span id="summary-deposit">KSH 0</span>
+                    </div>
+                    <div class="d-flex justify-content-between fw-bold">
+                        <span>Total:</span>
+                        <span id="summary-total">KSH 0</span>
+                    </div>
+                    
+                    <!-- Payment Section (integrated into the same card) -->
+                    <div id="payment-section" style="display: none; margin-top: 1.5rem;">
+                        <hr>
+                        <h5 class="mb-3 text-primary">Payment</h5>
+                        <div class="alert alert-info">
+                            <p class="mb-0"><i class="bi bi-info-circle"></i> For home services, a 50% deposit is required to confirm your booking.</p>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="phone_number">M-Pesa Phone Number</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">+254</span>
+                                </div>
+                                <input type="text" class="form-control" id="phone_number" name="phone_number" placeholder="7XXXXXXXX" pattern="[0-9]{9}" maxlength="9">
+                            </div>
+                            <small class="form-text text-muted">Enter your M-Pesa registered phone number without the country code.</small>
+                        </div>
+                        
+                        <button type="button" id="initiate-payment" class="btn btn-primary w-100">
+                            <i class="bi bi-credit-card"></i> Pay Deposit with M-Pesa
+                        </button>
+                        
+                        <div id="payment-status" class="mt-3" style="display: none;">
+                            <div class="alert alert-warning">
+                                <p><i class="bi bi-hourglass-split"></i> Please check your phone for the M-Pesa payment prompt.</p>
+                                <p class="mb-0">Transaction Reference: <span id="transaction-reference"></span></p>
+                                <div class="progress mt-2">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // DOM Elements
+        const serviceOptions = document.querySelectorAll('.service-option');
+        const serviceRadios = document.querySelectorAll('input[name="service_id"]');
+        const serviceField = document.getElementById('service_field');
+        const timeOptions = document.querySelectorAll('.time-option:not(.disabled)');
+        const selectedTimeInput = document.getElementById('selected_time');
+        const dateInput = document.getElementById('appointment_date');
+        const locationTypeRadios = document.querySelectorAll('input[name="location_type"]');
+        const homeServiceOptions = document.getElementById('home-service-options');
+        const countySelect = document.getElementById('county');
+        const locationSelect = document.getElementById('location');
+        
+        // Summary Elements
+        const summaryService = document.getElementById('summary-service');
+        const summaryPrice = document.getElementById('summary-price');
+        const summaryDate = document.getElementById('summary-date');
+        const summaryTime = document.getElementById('summary-time');
+        const summaryLocation = document.getElementById('summary-location');
+        const summaryTotal = document.getElementById('summary-total');
+        const homeServiceFeeRow = document.getElementById('home-service-fee-row');
+        const homeServiceFeeAmount = document.getElementById('home-service-fee-amount');
+        const depositRow = document.getElementById('deposit-row');
+        const summaryDeposit = document.getElementById('summary-deposit');
+        
+        // Payment Elements
+        const paymentSection = document.getElementById('payment-section');
+        const initiatePaymentBtn = document.getElementById('initiate-payment');
+        const paymentStatus = document.getElementById('payment-status');
+        const paymentCompletedInput = document.getElementById('payment_completed');
+        const transactionIdInput = document.getElementById('transaction_id');
+        const transactionReference = document.getElementById('transaction-reference');
+        const submitBtn = document.getElementById('submit-button');
+        
+        // Form Validation
+        const appointmentForm = document.getElementById('appointment-form');
+        appointmentForm.addEventListener('submit', function(event) {
+            // Validate service selection
+            const selectedService = document.querySelector('input[name="service_id"]:checked');
+            if (!selectedService) {
+                event.preventDefault();
+                alert('Please select a service');
+                return false;
+            }
+            
+            // Ensure the service_id field is populated with the selected service ID
+            document.getElementById('service_id').value = selectedService.value;
+            
+            // Ensure the service field is populated with the selected service ID
+            if (serviceField) {
+                serviceField.value = selectedService.value;
+            }
+            
+            // Validate time selection
+            if (!selectedTimeInput.value) {
+                event.preventDefault();
+                alert('Please select an appointment time');
+                return false;
+            }
+            
+            // Validate home service details if home service is selected
+            if (document.querySelector('input[name="location_type"]:checked').value === 'home') {
+                const county = countySelect.value;
+                const location = locationSelect.value;
+                const address = document.getElementById('address').value;
+                
+                if (!county) {
+                    event.preventDefault();
+                    alert('Please select a county for home service');
+                    return false;
+                }
+                
+                if (!location) {
+                    event.preventDefault();
+                    alert('Please select a location/sub-county for home service');
+                    return false;
+                }
+                
+                if (!address) {
+                    event.preventDefault();
+                    alert('Please provide your full address for home service');
+                    return false;
+                }
+                
+                // Check if payment is completed for home service
+                if (paymentCompletedInput.value !== 'true') {
+                    event.preventDefault();
+                    alert('Please complete the deposit payment to confirm your home service booking');
+                    return false;
+                }
+            }
+        });
+        
+        // Initialize date picker with today's date
+        dateInput.valueAsDate = new Date();
+        const today = new Date();
+        summaryDate.textContent = today.toLocaleDateString('en-US', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        });
+        
+        // Date change handler
+        dateInput.addEventListener('change', function() {
+            const selectedDate = new Date(this.value);
+            summaryDate.textContent = selectedDate.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            
+            // Reset time selection when date changes
+            timeOptions.forEach(opt => opt.classList.remove('selected'));
+            selectedTimeInput.value = '';
+            summaryTime.textContent = 'Select a time';
+            
+            // Check time slot availability for the new date
+            checkTimeSlotAvailability();
+        });
+        
+        // Service selection handler
+        serviceOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                const serviceId = this.dataset.serviceId;
+                const radio = document.querySelector(`input[value="${serviceId}"]`);
+                radio.checked = true;
+                
+                // Update selected styling
+                serviceOptions.forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+                
+                // Update the service field with the selected service ID
+                if (serviceField) {
+                    serviceField.value = serviceId;
+                }
+                
+                // Set the service_id hidden field value
+                document.getElementById('service_id').value = serviceId;
+                
+                updateServiceSummary();
+                
+                // When service changes, check time slot availability based on duration
+                checkTimeSlotAvailability();
+                
+                // Update deposit amount if home service is selected
+                if (document.querySelector('input[name="location_type"]:checked').value === 'home') {
+                    calculateDeposit();
+                }
+            });
+        });
+        
+        // Time selection handler
+        timeOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                if (!this.classList.contains('disabled')) {
+                    timeOptions.forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                    selectedTimeInput.value = this.dataset.time;
+                    
+                    // Update summary
+                    summaryTime.textContent = this.dataset.display || this.textContent;
+                }
+            });
+        });
+        
+        // Location type change handler
+        locationTypeRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.value === 'home') {
+                    homeServiceOptions.style.display = 'block';
+                    summaryLocation.textContent = 'Home Service';
+                    homeServiceFeeRow.style.display = 'flex';
+                    depositRow.style.display = 'flex';
+                    paymentSection.style.display = 'block';
+                    
+                    // Reset payment status
+                    paymentCompletedInput.value = 'false';
+                    transactionIdInput.value = '';
+                    paymentStatus.style.display = 'none';
+                    initiatePaymentBtn.disabled = false;
+                    
+                    // Disable submit button until payment is completed
+                    submitBtn.disabled = true;
+                    
+                    // Calculate deposit based on current service and location
+                    calculateDeposit();
+                } else {
+                    homeServiceOptions.style.display = 'none';
+                    summaryLocation.textContent = 'Salon Visit';
+                    homeServiceFeeRow.style.display = 'none';
+                    depositRow.style.display = 'none';
+                    paymentSection.style.display = 'none';
+                    
+                    // Enable submit button for salon visits
+                    submitBtn.disabled = false;
+                }
+                
+                // Update location summary
+                updateLocationSummary();
+                
+                // Update total price
+                updateTotalPrice();
+            });
+        });
+        
+        // County change handler
+        countySelect.addEventListener('change', function() {
+            const selectedCounty = this.value;
+            
+            // Clear and disable location select
+            locationSelect.innerHTML = '<option value="">Select Location</option>';
+            locationSelect.disabled = true;
+            
+            if (selectedCounty) {
+                // Fetch locations for the selected county using query parameter
+                fetch(`/api/locations?county=${selectedCounty}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.locations && data.locations.length > 0) {
+                            // Populate location select with options
+                            data.locations.forEach(location => {
+                                const option = document.createElement('option');
+                                option.value = location.name;
+                                option.textContent = location.name;
+                                option.dataset.fee = location.home_service_fee;
+                                locationSelect.appendChild(option);
+                            });
+                            
+                            // Enable location select
+                            locationSelect.disabled = false;
+                            
+                            // Update home service fee if a fee is provided
+                            if (data.fee) {
+                                homeServiceFeeAmount.textContent = data.fee;
+                                updateTotalPrice();
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching locations:', error);
+                    });
+            }
+            
+            // Update location summary
+            updateLocationSummary();
+        });
+        
+        // Location change handler
+        locationSelect.addEventListener('change', function() {
+            if (this.value) {
+                const selectedOption = this.options[this.selectedIndex];
+                const fee = selectedOption.dataset.fee || 0;
+                
+                // Update home service fee
+                homeServiceFeeAmount.textContent = fee;
+                
+                // Update total price
+                updateTotalPrice();
+                
+                // Update deposit amount if home service is selected
+                if (document.querySelector('input[name="location_type"]:checked').value === 'home') {
+                    calculateDeposit();
+                }
+            }
+            
+            // Update location summary
+            updateLocationSummary();
+        });
+        
+        // Function to check time slot availability based on service duration
+        function checkTimeSlotAvailability() {
+            const selectedService = document.querySelector('input[name="service_id"]:checked');
+            const selectedDate = dateInput.value;
+            
+            if (selectedService && selectedDate) {
+                const serviceId = selectedService.value;
+                const serviceDuration = selectedService.dataset.duration;
+                
+                // Reset time selection
+                timeOptions.forEach(opt => {
+                    opt.classList.remove('selected', 'disabled');
+                    opt.removeAttribute('title');
+                });
+                selectedTimeInput.value = '';
+                summaryTime.textContent = 'Select a time';
+                
+                // Fetch availability for the selected date and service
+                fetch(`/api/availability?date=${selectedDate}&service_id=${serviceId}&duration=${serviceDuration}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.unavailable_slots && data.unavailable_slots.length > 0) {
+                            data.unavailable_slots.forEach(slot => {
+                                const timeOption = document.querySelector(`.time-option[data-time="${slot}"]`);
+                                if (timeOption) {
+                                    timeOption.classList.add('disabled');
+                                    timeOption.setAttribute('title', 'Not available');
+                                }
+                            });
+                        }
+                    })
+                    .catch(error => console.error('Error checking availability:', error));
+            }
+        }
+        
+        // Function to update location summary
+        function updateLocationSummary() {
+            const locationType = document.querySelector('input[name="location_type"]:checked').value;
+            
+            if (locationType === 'home') {
+                const county = countySelect.value;
+                const location = locationSelect.value;
+                
+                if (county && location) {
+                    summaryLocation.textContent = `Home Service - ${location}, ${county}`;
+                } else if (county) {
+                    summaryLocation.textContent = `Home Service - ${county}`;
+                } else {
+                    summaryLocation.textContent = 'Home Service';
+                }
+            } else {
+                summaryLocation.textContent = 'Salon Visit';
+            }
+        }
+        
+        // Function to update service summary
+        function updateServiceSummary() {
+            const selectedRadio = document.querySelector('input[name="service_id"]:checked');
+            if (selectedRadio) {
+                const serviceName = selectedRadio.dataset.serviceName;
+                const servicePrice = selectedRadio.dataset.price;
+                
+                summaryService.textContent = serviceName;
+                summaryPrice.textContent = `KSH ${servicePrice}`;
+                
+                updateTotalPrice();
+            }
+        }
+        
+        // Function to update total price
+        // Function to update total price
+        function updateTotalPrice() {
+            const selectedRadio = document.querySelector('input[name="service_id"]:checked');
+            if (selectedRadio) {
+                const servicePrice = parseFloat(selectedRadio.dataset.price) || 0;
+                let totalPrice = servicePrice;
+                
+                // Check if home service is selected
+                if (document.querySelector('input[name="location_type"]:checked').value === 'home') {
+                    // Add home service fee
+                    const homeServiceFee = parseFloat(homeServiceFeeAmount.textContent) || 0;
+                    totalPrice += homeServiceFee;
+                }
+                
+                // Update total price
+                summaryTotal.textContent = `KSH ${totalPrice.toFixed(0)}`;
+            }
+        }
+        
+        // Function to calculate deposit
+        function calculateDeposit() {
+            const selectedRadio = document.querySelector('input[name="service_id"]:checked');
+            if (selectedRadio) {
+                const servicePrice = parseFloat(selectedRadio.dataset.price) || 0;
+                const homeServiceFee = parseFloat(homeServiceFeeAmount.textContent) || 0;
+                const totalPrice = servicePrice + homeServiceFee;
+                
+                // Calculate 50% deposit
+                const depositAmount = totalPrice * 0.5;
+                summaryDeposit.textContent = `KSH ${depositAmount.toFixed(0)}`;
+                
+                // Update the payment button text to show the deposit amount
+                initiatePaymentBtn.innerHTML = `<i class="bi bi-credit-card"></i> Pay Deposit (KSH ${depositAmount.toFixed(0)}) with M-Pesa`;
+            }
+        }
+        
+        // Initiate M-Pesa payment
+        initiatePaymentBtn.addEventListener('click', function() {
+            const phoneNumber = document.getElementById('phone_number').value;
+            
+            if (!phoneNumber || phoneNumber.length !== 9) {
+                alert('Please enter a valid phone number');
+                return;
+            }
+            
+            const depositAmount = calculateDeposit();
+            const fullPhoneNumber = '254' + phoneNumber;
+            
+            // Generate a random reference number
+            const reference = 'GBT' + Math.floor(Math.random() * 1000000);
+            transactionReference.textContent = reference;
+            
+            // Show payment status
+            paymentStatus.style.display = 'block';
+            initiatePaymentBtn.disabled = true;
+            
+            // Make API call to initiate M-Pesa payment
+            fetch('/api/mpesa/stk-push', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    phone_number: fullPhoneNumber,
+                    amount: depositAmount,
+                    reference: reference,
+                    description: 'Home Service Deposit'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Poll for payment status
+                    checkPaymentStatus(data.checkout_request_id, reference);
+                } else {
+                    alert('Failed to initiate payment: ' + data.message);
+                    paymentStatus.style.display = 'none';
+                    initiatePaymentBtn.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while processing your payment');
+                paymentStatus.style.display = 'none';
+                initiatePaymentBtn.disabled = false;
+            });
+        });
+        
+        // Check payment status
+        function checkPaymentStatus(checkoutRequestId, reference) {
+            let attempts = 0;
+            const maxAttempts = 10;
+            
+            const checkStatus = setInterval(function() {
+                attempts++;
+                
+                fetch('/api/mpesa/query-status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        checkout_request_id: checkoutRequestId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        clearInterval(checkStatus);
+                        paymentStatus.innerHTML = `
+                            <div class="alert alert-success">
+                                <p><i class="bi bi-check-circle"></i> Payment successful!</p>
+                                <p>Transaction ID: ${data.transaction_id}</p>
+                                <p>You can now submit your booking.</p>
+                            </div>
+                        `;
+                        paymentCompletedInput.value = 'true';
+                        transactionIdInput.value = data.transaction_id;
+                        submitBtn.disabled = false;
+                    } else if (attempts >= maxAttempts) {
+                        clearInterval(checkStatus);
+                        paymentStatus.innerHTML = `
+                            <div class="alert alert-danger">
+                                <p><i class="bi bi-exclamation-triangle"></i> Payment verification timed out.</p>
+                                <p>If you completed the payment, please continue with your booking and we'll verify it manually.</p>
+                                <p>Reference: ${reference}</p>
+                            </div>
+                        `;
+                        submitBtn.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    if (attempts >= maxAttempts) {
+                        clearInterval(checkStatus);
+                        paymentStatus.innerHTML = `
+                            <div class="alert alert-danger">
+                                <p><i class="bi bi-exclamation-triangle"></i> Error checking payment status.</p>
+                                <p>If you completed the payment, please continue with your booking and we'll verify it manually.</p>
+                                <p>Reference: ${reference}</p>
+                            </div>
+                        `;
+                        submitBtn.disabled = false;
+                    }
+                });
+            }, 5000); // Check every 5 seconds
+        }
+        
+        // Initialize
+        updateServiceSummary();
+        checkTimeSlotAvailability();
+    });
+</script>
+
+<style>
+    .service-option {
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 2px solid transparent;
+    }
+    
+    .service-option:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .service-option.selected {
+        border-color: #0d6efd;
+        background-color: rgba(13, 110, 253, 0.05);
+    }
+    
+    .time-selector {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+    }
+    
+    .time-option {
+        padding: 10px;
+        text-align: center;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .time-option:hover:not(.disabled) {
+        background-color: rgba(13, 110, 253, 0.1);
+        border-color: #0d6efd;
+    }
+    
+    .time-option.selected {
+        background-color: #0d6efd;
+        color: white;
+        border-color: #0d6efd;
+    }
+    
+    .time-option.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background-color: #f8f9fa;
+    }
+    
+    .sticky-top {
+        z-index: 100;
+    }
+    
+    @media (max-width: 767.98px) {
+        .time-selector {
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        }
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Profile - Beauty E-commerce{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-3">
+            <h2 class="h3 mb-4">{{ user.name }}</h2>
+            <p class="text-muted">{{ user.email }}</p>
+            
+            <div class="list-group mb-4">
+                <a href="{{ url_for('profile') }}" class="list-group-item list-group-item-action">
+                    <i class="bi bi-person me-2"></i> Profile
+                </a>
+                <a href="{{ url_for('user_appointments') }}" class="list-group-item list-group-item-action">
+                    <i class="bi bi-calendar-check me-2"></i> Appointments
+                </a>
+                <a href="{{ url_for('user_orders') }}" class="list-group-item list-group-item-action">
+                    <i class="bi bi-box me-2"></i> Orders
+                </a>
+                <a href="{{ url_for('user_wishlist') }}" class="list-group-item list-group-item-action">
+                    <i class="bi bi-heart me-2"></i> Wishlist
+                </a>
+            </div>
+            
+            <div class="d-grid">
+                <a href="{{ url_for('logout') }}" class="btn btn-outline-danger">
+                    Sign Out
+                </a>
+            </div>
+        </div>
+        
+        <div class="col-lg-9">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">Edit Profile</h4>
+                    <p class="text-muted small mb-0">Update your personal information</p>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('edit_profile') }}" method="post">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="name" class="form-label">Full Name</label>
+                                <input type="text" class="form-control" id="name" name="name" value="{{ user.name }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="email" class="form-label">Email Address</label>
+                                <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="phone" class="form-label">Phone Number</label>
+                                <input type="tel" class="form-control" id="phone" name="phone" value="{{ user.phone if user.phone else '' }}" placeholder="e.g. 0712345678">
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('profile') }}" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card shadow-sm mt-4">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">Address Information</h4>
+                    <p class="text-muted small mb-0">Update your address details</p>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('update_address') }}" method="post">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="mb-3">
+                            <label for="address_line1" class="form-label">Address Line 1</label>
+                            <input type="text" class="form-control" id="address_line1" name="address_line1" value="{{ user.address.line1 if user.address else '' }}">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="address_line2" class="form-label">Address Line 2</label>
+                            <input type="text" class="form-control" id="address_line2" name="address_line2" value="{{ user.address.line2 if user.address else '' }}">
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="city" class="form-label">City</label>
+                                <input type="text" class="form-control" id="city" name="city" value="{{ user.address.city if user.address else '' }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="county" class="form-label">County</label>
+                                <select class="form-select" id="county" name="county">
+                                    <option value="">Select County</option>
+                                    <option value="Nairobi" {% if user.address and user.address.county == 'Nairobi' %}selected{% endif %}>Nairobi</option>
+                                    <option value="Kiambu" {% if user.address and user.address.county == 'Kiambu' %}selected{% endif %}>Kiambu</option>
+                                    <option value="Nakuru" {% if user.address and user.address.county == 'Nakuru' %}selected{% endif %}>Nakuru</option>
+                                    <!-- Add more counties as needed -->
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="postal_code" class="form-label">Postal Code</label>
+                                <input type="text" class="form-control" id="postal_code" name="postal_code" value="{{ user.address.postal_code if user.address else '' }}">
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('profile') }}" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Save Address</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

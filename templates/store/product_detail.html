@@ -1,0 +1,514 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ product.name }} - GlamBeauty{% endblock %}
+
+{% block extra_css %}
+<style>
+    .main-image {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 400px;
+        overflow: hidden;
+    }
+    
+    .main-image img {
+        max-height: 100%;
+        max-width: 100%;
+        object-fit: contain;
+    }
+    
+    .thumbnail-image {
+        cursor: pointer;
+        transition: all 0.2s ease;
+        height: 80px;
+        object-fit: cover;
+    }
+    
+    .thumbnail-image:hover {
+        transform: scale(1.05);
+        border-color: var(--primary);
+    }
+    
+    .active-thumbnail {
+        border: 2px solid var(--primary);
+    }
+    .main-image {
+        overflow: hidden;
+        cursor: zoom-in;
+    }
+    
+    .main-image img {
+        transition: transform 0.3s ease;
+    }
+    
+    /* Rating stars styling */
+    .rating-stars .form-check-inline {
+        margin-right: 1rem;
+    }
+    
+    .rating-stars label.text-warning {
+        color: #ffc107 !important;
+    }
+    
+    /* Product price styling */
+    .current-price {
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+    
+    .discount-badge {
+        background-color: #dc3545;
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+    }
+    
+    /* Product tabs styling */
+    .nav-tabs .nav-link.active {
+        font-weight: bold;
+        border-color: #0d6efd #dee2e6 #fff;
+        border-top-width: 2px;
+        border-top-color: #0d6efd;
+    }
+    
+    /* Thumbnail images styling */
+    .thumbnail-image {
+        cursor: pointer;
+        transition: opacity 0.2s;
+    }
+    
+    .thumbnail-image:hover {
+        opacity: 0.8;
+    }
+    
+    /* Fade-in animation */
+    .fade-in {
+        animation: fadeIn 0.8s ease-in-out;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Stock status badges */
+    .stock-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        margin-bottom: 1rem;
+    }
+    
+    .in-stock {
+        background-color: #d1e7dd;
+        color: #0f5132;
+    }
+    
+    .limited-stock {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    
+    .out-of-stock {
+        background-color: #f8d7da;
+        color: #842029;
+    }
+    
+    /* Review section styling */
+    .review-card {
+        border-bottom: 1px solid #dee2e6;
+        padding-bottom: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .review-card:last-child {
+        border-bottom: none;
+    }
+    
+    .review-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+    }
+    
+    .review-author {
+        font-weight: 500;
+    }
+    
+    .review-date {
+        color: #6c757d;
+        font-size: 0.875rem;
+    }
+    
+    .star-rating {
+        color: #ffc107;
+        margin-bottom: 0.5rem;
+    }
+    .stock-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        margin-bottom: 1rem;
+    }
+
+    .in-stock {
+        background-color: rgba(25, 135, 84, 0.1);
+        color: #198754;
+    }
+
+    .limited-stock {
+        background-color: rgba(255, 193, 7, 0.1);
+        color: #fd7e14;
+    }
+
+    .out-of-stock {
+        background-color: rgba(220, 53, 69, 0.1);
+        color: #dc3545;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="product-details py-5">
+    <div class="container">
+        <nav aria-label="breadcrumb" class="mb-4 fade-in">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('home') }}">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('shop') }}">Shop</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('shop', category=product.category) }}">{{ product.category|capitalize }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ product.name }}</li>
+            </ol>
+        </nav>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="product-image-gallery fade-in">
+                    <div class="main-image mb-3 text-center">
+                        <img src="{{ url_for('static', filename='uploads/' + product.image) if product.image else url_for('static', filename='images/product-placeholder.jpg') }}" class="img-fluid rounded mx-auto d-block" alt="{{ product.name }}">
+                    </div>
+                    {% if product.gallery_images %}
+                    <div class="thumbnail-images">
+                        <div class="row">
+                            {% for image in product.gallery_images %}
+                            <div class="col-3 text-center">
+                                <img src="{{ url_for('static', filename='uploads/' + image) }}" class="img-thumbnail thumbnail-image" alt="{{ product.name }}" onclick="changeMainImage(this.src)">
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="product-info fade-in">
+                    <h1 class="mb-2">{{ product.name }}</h1>
+                    
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="star-rating me-2">
+                            {% for i in range(5) %}
+                                {% if i < product.rating|int %}
+                                    <i class="bi bi-star-fill"></i>
+                                {% elif i < product.rating %}
+                                    <i class="bi bi-star-half"></i>
+                                {% else %}
+                                    <i class="bi bi-star"></i>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <span class="text-muted">{{ product.rating }} ({{ product.reviews|length }} reviews)</span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {% if product.original_price and product.original_price > product.price %}
+                            <span class="text-muted text-decoration-line-through me-2">KSh{{ "%.2f"|format(product.original_price) }}</span>
+                            <span class="current-price">KSH</span>{{ "%.2f"|format(product.price) }}</span>
+                            <span class="discount-badge ms-2">
+                                {{ ((1 - product.price / product.original_price) * 100)|int }}% OFF
+                            </span>
+                        {% else %}
+                            <span class="current-price">KSH{{ "%.2f"|format(product.price) }}</span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Stock Status -->
+                    {% if product.stock <= 0 %}
+                        <div class="stock-badge out-of-stock">
+                            <i class="bi bi-x-circle me-1"></i> Out of Stock
+                        </div>
+                    {% elif product.stock <= 5 %}
+                        <div class="stock-badge limited-stock">
+                            <i class="bi bi-exclamation-triangle me-1"></i> Limited Stock ({{ product.stock }} left)
+                        </div>
+                    {% else %}
+                        <div class="stock-badge in-stock">
+                            <i class="bi bi-check-circle me-1"></i> In Stock
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Product Description -->
+                    <div class="product-description mb-4">
+                        <h5>Description</h5>
+                        <p>{{ product.description }}</p>
+                    </div>
+                    
+                    <!-- Add to Cart Form -->
+                    <form action="{{ url_for('add_to_cart') }}" method="post" class="mb-3">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="product_id" value="{{ product._id }}">
+                        
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-4">
+                                <div class="input-group">
+                                    <button type="button" class="btn btn-outline-secondary" onclick="decrementQuantity()" {% if product.stock <= 0 %}disabled{% endif %}>-</button>
+                                    <input type="number" id="quantity" name="quantity" value="1" min="1" max="{{ product.stock }}" class="form-control text-center" {% if product.stock <= 0 %}disabled{% endif %}>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="incrementQuantity()" {% if product.stock <= 0 %}disabled{% endif %}>+</button>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <button type="submit" class="btn btn-primary w-100" {% if product.stock <= 0 %}disabled{% endif %}>
+                                    <i class="bi bi-cart-plus me-2"></i>Add to Cart
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    <!-- Add to Wishlist Form -->
+                    <form action="{{ url_for('add_to_wishlist', product_id=product._id) }}" method="post" class="mb-4">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="product_id" value="{{ product._id }}">
+                        <button type="submit" class="btn btn-outline-danger w-100">
+                            <i class="bi bi-heart me-1"></i> Add to Wishlist
+                        </button>
+                    </form>
+                    
+                    <!-- Product Meta -->
+                    <div class="product-meta">
+                        <p class="mb-1"><strong>Category:</strong> <a href="{{ url_for('shop', category=product.category) }}">{{ product.category|capitalize }}</a></p>
+                        {% if product.tags %}
+                        <p class="mb-1">
+                            <strong>Tags:</strong> 
+                            {% for tag in product.tags %}
+                                <a href="{{ url_for('shop', tag=tag) }}" class="badge bg-light text-dark text-decoration-none me-1">{{ tag }}</a>
+                            {% endfor %}
+                        </p>
+                        {% endif %}
+                        <p class="mb-0"><strong>SKU:</strong> {{ product._id }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Product Tabs -->
+        <div class="row mt-5">
+            <div class="col-12">
+                <ul class="nav nav-tabs" id="productTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="description-tab" data-bs-toggle="tab" data-bs-target="#description" type="button" role="tab" aria-controls="description" aria-selected="true">Description</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews" type="button" role="tab" aria-controls="reviews" aria-selected="false">Reviews ({{ product.reviews|length }})</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="shipping-tab" data-bs-toggle="tab" data-bs-target="#shipping" type="button" role="tab" aria-controls="shipping" aria-selected="false">Shipping & Returns</button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content p-4 border border-top-0 rounded-bottom" id="productTabsContent">
+                    <!-- Description Tab -->
+                    <div class="tab-pane fade show active" id="description" role="tabpanel" aria-labelledby="description-tab">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h4>Product Details</h4>
+                                <p>{{ product.full_description }}</p>
+                                
+                                {% if product.features %}
+                                <h5 class="mt-4">Features</h5>
+                                <ul>
+                                    {% for feature in product.features %}
+                                    <li>{{ feature }}</li>
+                                    {% endfor %}
+                                </ul>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                {% if product.specifications %}
+                                <h5>Specifications</h5>
+                                <table class="table table-bordered">
+                                    <tbody>
+                                        {% for key, value in product.specifications.items() %}
+                                        <tr>
+                                            <th>{{ key }}</th>
+                                            <td>{{ value }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Reviews Tab -->
+                    <div class="tab-pane fade" id="reviews" role="tabpanel" aria-labelledby="reviews-tab">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h4>Customer Reviews</h4>
+                                
+                                {% if product.reviews %}
+                                    <div class="reviews-list mt-4">
+                                        {% for review in product.reviews %}
+                                        <div class="review-card">
+                                            <div class="review-header">
+                                                <span class="review-author">{{ review.user_name }}</span>
+                                                <span class="review-date">{{ review.date.strftime('%B %d, %Y') if review.date else 'N/A' }}</span>
+                                            </div>
+                                            <div class="star-rating">
+                                                {% for i in range(5) %}
+                                                    {% if i < review.rating %}
+                                                        <i class="bi bi-star-fill"></i>
+                                                    {% else %}
+                                                        <i class="bi bi-star"></i>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                            <p class="review-content">{{ review.comment }}</p>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <p class="text-muted">No reviews yet. Be the first to review this product!</p>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Write a Review</h5>
+                                        
+                                        {% if current_user.is_authenticated %}
+                                            <form action="{{ url_for('add_review', product_id=product._id) }}" method="post">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                
+                                                <div class="mb-3">
+                                                    <label class="form-label">Rating</label>
+                                                    <div class="rating-stars">
+                                                        {% for i in range(1, 6) %}
+                                                        <div class="form-check form-check-inline">
+                                                            <input class="form-check-input" type="radio" name="rating" id="rating{{ i }}" value="{{ i }}" required>
+                                                            <label class="form-check-label" for="rating{{ i }}">{{ i }}</label>
+                                                        </div>
+                                                        {% endfor %}
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="mb-3">
+                                                    <label for="comment" class="form-label">Your Review</label>
+                                                    <textarea class="form-control" id="comment" name="comment" rows="4" required></textarea>
+                                                </div>
+                                                
+                                                <button type="submit" class="btn btn-primary">Submit Review</button>
+                                            </form>
+                                        {% else %}
+                                            <p class="text-muted">Please <a href="{{ url_for('login', next=request.path) }}">log in</a> to write a review.</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Shipping Tab -->
+                    <div class="tab-pane fade" id="shipping" role="tabpanel" aria-labelledby="shipping-tab">
+                        <h4>Shipping Information</h4>
+                        <p>We offer free shipping on orders over 5000. Standard delivery takes 1-3 business days.</p>
+                        
+                        <h4 class="mt-4">Return Policy</h4>
+                        <p>If you're not satisfied with your purchase, you can return it within 30 days for a full refund. Please note that the item must be unused and in its original packaging.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Related Products -->
+        {% if related_products %}
+        <div class="related-products mt-5">
+            <h3 class="mb-4">You May Also Like</h3>
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+                {% for related in related_products %}
+                <div class="col">
+                    <div class="card h-100">
+                        <a href="{{ url_for('product_detail', product_id=related._id) }}">
+                            <img src="{{ url_for('static', filename='uploads/' + related.image) if related.image else url_for('static', filename='images/product-placeholder.jpg') }}" class="card-img-top" alt="{{ related.name }}" style="height: 200px; object-fit: cover;">
+                        </a>
+                        <div class="card-body">
+                            <h5 class="card-title">{{ related.name }}</h5>
+                            <p class="card-text text-primary">KSH{{ "%.2f"|format(related.price) }}</p>
+                            <div class="d-grid">
+                                <a href="{{ url_for('product_detail', product_id=related._id) }}" class="btn btn-outline-primary">View Details</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Change main image when clicking on thumbnails
+    function changeMainImage(src) {
+        document.querySelector('.main-image img').src = src;
+    }
+    
+    // Quantity increment/decrement
+    function incrementQuantity() {
+        const quantityInput = document.getElementById('quantity');
+        const maxStock = {{ product.stock }};
+        const currentValue = parseInt(quantityInput.value);
+        
+        if (currentValue < maxStock) {
+            quantityInput.value = currentValue + 1;
+        }
+    }
+    
+    function decrementQuantity() {
+        const quantityInput = document.getElementById('quantity');
+        const currentValue = parseInt(quantityInput.value);
+        
+        if (currentValue > 1) {
+            quantityInput.value = currentValue - 1;
+        }
+    }
+    
+    // Initialize star rating
+    document.addEventListener('DOMContentLoaded', function() {
+        const ratingInputs = document.querySelectorAll('input[name="rating"]');
+        const ratingLabels = document.querySelectorAll('.rating-stars label');
+        
+        ratingInputs.forEach((input, index) => {
+            input.addEventListener('change', function() {
+                // Reset all labels
+                ratingLabels.forEach(label => {
+                    label.classList.remove('text-warning');
+                });
+                
+                // Highlight selected and previous stars
+                for (let i = 0; i <= index; i++) {
+                    ratingLabels[i].classList.add('text-warning');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

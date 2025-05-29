@@ -1,0 +1,59 @@
+# Environment variables
+.env
+.env.*
+create_admin_users.py
+client_secret.json
+GlamBeauty.categories.csv
+run.py
+test_calendar.py
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+venv/
+ENV/
+.env
+client_secret.json
+test_email_unit.py
+test_email.py
+test_calendar.py
+test_mongodb_connection.py
+test_calendar_unit.py
+test_password_reset_email.py
+notional-data.json
+models.py
+# Flask
+instance/
+.webassets-cache
+notional-data.json
+# Uploads
+static/uploads/*
+!static/uploads/.gitkeep
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS specific files
+.DS_Store
+Thumbs.db

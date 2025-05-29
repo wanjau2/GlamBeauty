@@ -1,0 +1,295 @@
+{% extends 'base.html' %}
+
+{% block title %}Search Results - GlamBeauty{% endblock %}
+
+{% block content %}
+<!-- Search Results Header -->
+<section class="search-header py-5">
+    <div class="container">
+        <h1 class="text-center mb-2 fade-in">Search Results</h1>
+        <p class="text-center lead mb-0 fade-in">Showing results for "{{ query }}"</p>
+    </div>
+</section>
+
+<!-- Search Results Content -->
+<section class="search-content py-5">
+    <div class="container">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-lg-3 mb-4 fade-in">
+                <div class="card sidebar-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Refine Search</h5>
+                    </div>
+                    <div class="card-body">
+                        <form action="{{ url_for('store.search') }}" method="get">
+                            <input type="hidden" name="q" value="{{ query }}">
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Categories</label>
+                                {% for cat in categories %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="category" value="{{ cat.id }}" id="category{{ loop.index }}" {% if cat.id in selected_categories %}checked{% endif %}>
+                                    <label class="form-check-label" for="category{{ loop.index }}">
+                                        {{ cat.name }} ({{ cat.count }})
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Price Range</label>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <input type="number" class="form-control" name="min_price" placeholder="Min" value="{{ request.args.get('min_price', '') }}">
+                                    </div>
+                                    <div class="col-6">
+                                        <input type="number" class="form-control" name="max_price" placeholder="Max" value="{{ request.args.get('max_price', '') }}">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Sort By</label>
+                                <select class="form-select" name="sort">
+                                    <option value="relevance" {% if request.args.get('sort') == 'relevance' %}selected{% endif %}>Relevance</option>
+                                    <option value="newest" {% if request.args.get('sort') == 'newest' %}selected{% endif %}>Newest</option>
+                                    <option value="price_low" {% if request.args.get('sort') == 'price_low' %}selected{% endif %}>Price: Low to High</option>
+                                    <option value="price_high" {% if request.args.get('sort') == 'price_high' %}selected{% endif %}>Price: High to Low</option>
+                                </select>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">Apply Filters</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Products -->
+            <div class="col-lg-9">
+                <div class="d-flex justify-content-between align-items-center mb-4 fade-in">
+                    <div>
+                        <h2 class="mb-0">Search Results</h2>
+                        <p class="text-muted mb-0">Found {{ products|length }} of {{ total_products }} products for "{{ query }}"</p>
+                    </div>
+                    <div class="view-options">
+                        <button class="btn btn-sm btn-outline-secondary me-2 view-grid active"><i class="fas fa-th"></i></button>
+                        <button class="btn btn-sm btn-outline-secondary view-list"><i class="fas fa-list"></i></button>
+                    </div>
+                </div>
+                
+                {% if products|length == 0 %}
+                <div class="alert alert-info fade-in">
+                    <p class="mb-0">No products found matching "{{ query }}". Try different keywords or browse our categories.</p>
+                </div>
+                <div class="text-center mt-4">
+                    <a href="{{ url_for('store.index') }}" class="btn btn-primary">Browse All Products</a>
+                </div>
+                {% else %}
+                
+                <div class="row product-grid">
+                    {% for product in products %}
+                    <div class="col-md-4 mb-4 fade-in">
+                        <div class="card product-card h-100">
+                            {% if product.is_new %}
+                            <span class="badge bg-success position-absolute top-0 start-0 m-2">New</span>
+                            {% endif %}
+                            {% if product.discount_percentage %}
+                            <span class="badge bg-danger position-absolute top-0 end-0 m-2">{{ product.discount_percentage }}% OFF</span>
+                            {% endif %}
+                            <a href="{{ url_for('store.product_detail', product_id=product._id) }}">
+                                <img src="{{ url_for('static', filename='images/' + product.image) if product.image else url_for('static', filename='images/product-placeholder.jpg') }}" class="card-img-top" alt="{{ product.name }}">
+                            </a>
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title">
+                                    <a href="{{ url_for('store.product_detail', product_id=product._id) }}" class="text-decoration-none text-dark">{{ product.name }}</a>
+                                </h5>
+                                <div class="product-rating mb-2">
+                                    {% for i in range(5) %}
+                                        {% if product.rating and i < product.rating|int %}
+                                            <i class="fas fa-star text-warning"></i>
+                                        {% elif product.rating and i < product.rating|float and i >= product.rating|int %}
+                                            <i class="fas fa-star-half-alt text-warning"></i>
+                                        {% else %}
+                                            <i class="far fa-star text-warning"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                    <span class="ms-1 text-muted">({{ product.review_count }})</span>
+                                </div>
+                                <div class="product-price mb-2">
+                                    {% if product.original_price and product.original_price > product.price %}
+                                    <span class="text-muted text-decoration-line-through me-2">${{ product.original_price }}</span>
+                                    {% endif %}
+                                    <span class="fw-bold">${{ product.price }}</span>
+                                </div>
+                                <div class="mt-auto">
+                                    <div class="d-grid gap-2">
+                                        <a href="{{ url_for('store.product_detail', product_id=product._id) }}" class="btn btn-outline-primary">View Details</a>
+                                        <form action="{{ url_for('cart.add_to_cart') }}" method="post" class="d-grid">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="product_id" value="{{ product._id }}">
+                                            <input type="hidden" name="quantity" value="1">
+                                            <button type="submit" class="btn btn-primary" {% if product.stock <= 0 %}disabled{% endif %}>
+                                                <i class="fas fa-shopping-cart me-1"></i> Add to Cart
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Product List View (hidden by default) -->
+                <div class="product-list d-none">
+                    {% for product in products %}
+                    <div class="card mb-3 fade-in">
+                        <div class="row g-0">
+                            <div class="col-md-3">
+                                <a href="{{ url_for('store.product_detail', product_id=product._id) }}">
+                                    <img src="{{ url_for('static', filename='images/' + product.image) if product.image else url_for('static', filename='images/product-placeholder.jpg') }}" class="img-fluid rounded-start h-100 object-fit-cover" alt="{{ product.name }}">
+                                </a>
+                            </div>
+                            <div class="col-md-9">
+                                <div class="card-body h-100 d-flex flex-column">
+                                    <div class="d-flex justify-content-between">
+                                        <h5 class="card-title">
+                                            <a href="{{ url_for('store.product_detail', product_id=product._id) }}" class="text-decoration-none text-dark">{{ product.name }}</a>
+                                        </h5>
+                                        <div>
+                                            {% if product.is_new %}
+                                            <span class="badge bg-success">New</span>
+                                            {% endif %}
+                                            {% if product.discount_percentage %}
+                                            <span class="badge bg-danger">{{ product.discount_percentage }}% OFF</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="product-rating mb-2">
+                                        {% for i in range(5) %}
+                                            {% if i < product.rating|int %}
+                                                <i class="fas fa-star text-warning"></i>
+                                            {% elif i < product.rating|float and i >= product.rating|int %}
+                                                <i class="fas fa-star-half-alt text-warning"></i>
+                                            {% else %}
+                                                <i class="far fa-star text-warning"></i>
+                                            {% endif %}
+                                        {% endfor %}
+                                        <span class="ms-1 text-muted">({{ product.review_count }})</span>
+                                    </div>
+                                    <p class="card-text">{{ product.short_description }}</p>
+                                    <div class="product-price mb-2">
+                                        {% if product.original_price and product.original_price > product.price %}
+                                        <span class="text-muted text-decoration-line-through me-2">${{ product.original_price }}</span>
+                                        {% endif %}
+                                        <span class="fw-bold">${{ product.price }}</span>
+                                    </div>
+                                    <div class="mt-auto">
+                                        <div class="d-flex gap-2">
+                                            <a href="{{ url_for('store.product_detail', product_id=product._id) }}" class="btn btn-outline-primary">View Details</a>
+                                            <form action="{{ url_for('cart.add_to_cart') }}" method="post">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <input type="hidden" name="product_id" value="{{ product._id }}">
+                                                <input type="hidden" name="quantity" value="1">
+                                                <button type="submit" class="btn btn-primary" {% if product.stock <= 0 %}disabled{% endif %}>
+                                                    <i class="fas fa-shopping-cart me-1"></i> Add to Cart
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Pagination -->
+                {% if pagination and pagination.pages > 1 %}
+                <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if pagination.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('store.search', q=query, page=pagination.prev_num, **request.args) }}" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for page in pagination.iter_pages() %}
+                            {% if page %}
+                                {% if page != pagination.page %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('store.search', q=query, page=page, **request.args) }}">{{ page }}</a>
+                                </li>
+                                {% else %}
+                                <li class="page-item active">
+                                    <a class="page-link" href="#">{{ page }}</a>
+                                </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <a class="page-link" href="#">...</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if pagination.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('store.search', q=query, page=pagination.next_num, **request.args) }}" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Grid/List view toggle
+        const gridViewBtn = document.querySelector('.view-grid');
+        const listViewBtn = document.querySelector('.view-list');
+        const productGrid = document.querySelector('.product-grid');
+        const productList = document.querySelector('.product-list');
+        
+        if (gridViewBtn && listViewBtn && productGrid && productList) {
+            gridViewBtn.addEventListener('click', function() {
+                productGrid.classList.remove('d-none');
+                productList.classList.add('d-none');
+                gridViewBtn.classList.add('active');
+                listViewBtn.classList.remove('active');
+            });
+            
+            listViewBtn.addEventListener('click', function() {
+                productGrid.classList.add('d-none');
+                productList.classList.remove('d-none');
+                gridViewBtn.classList.remove('active');
+                listViewBtn.classList.add('active');
+            });
+        }
+    });
+</script>
+{% endblock %}

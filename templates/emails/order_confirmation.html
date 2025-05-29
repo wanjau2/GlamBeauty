@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Confirmation - GlamBeauty</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #e97fa3;
+        }
+        .content {
+            padding: 20px 0;
+        }
+        .order-details {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid #e97fa3;
+        }
+        .order-details h3 {
+            margin-top: 0;
+            color: #e97fa3;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #e97fa3;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-weight: 500;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px 0;
+            font-size: 12px;
+            color: #6c757d;
+            border-top: 1px solid #e9ecef;
+            margin-top: 20px;
+        }
+        .order-id {
+            font-size: 18px;
+            color: #6c757d;
+            margin-bottom: 20px;
+        }
+        .product-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        .product-table th {
+            background-color: #f8f9fa;
+            text-align: left;
+            padding: 8px;
+            border-bottom: 2px solid #e9ecef;
+        }
+        .product-table td {
+            padding: 8px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .price-summary {
+            margin-top: 15px;
+            text-align: right;
+        }
+        .total-price {
+            font-size: 18px;
+            font-weight: bold;
+            color: #e97fa3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">GlamBeauty</div>
+        </div>
+        
+        <div class="content">
+            <h1>Thank You for Your Order!</h1>
+            
+            <p>Hello {{ order.shipping_address.name }},</p>
+            
+            <p>We're excited to confirm that your order has been received and is being processed.</p>
+            
+            <div class="order-id">Order #{{ order._id }}</div>
+            
+            <div class="order-details">
+                <h3>Order Summary</h3>
+                
+                <table class="product-table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Quantity</th>
+                            <th>Price</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in order.items %}
+                        <tr>
+                            <td>{{ item.name }}</td>
+                            <td>{{ item.quantity }}</td>
+                            <td>KES {{ "%.2f"|format(item.price) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                
+                <div class="price-summary">
+                    <p>Subtotal: KES {{ "%.2f"|format(order.subtotal) }}</p>
+                    <p>Shipping: KES {{ "%.2f"|format(order.shipping_fee) }}</p>
+                    {% if order.discount %}
+                    <p>Discount: -KES {{ "%.2f"|format(order.discount) }}</p>
+                    {% endif %}
+                    <p class="total-price">Total: KES {{ "%.2f"|format(order.total) }}</p>
+                </div>
+            </div>
+            
+            <div class="order-details">
+                <h3>Shipping Information</h3>
+                <p>{{ order.shipping_address.name }}</p>
+                <p>{{ order.shipping_address.address_line1 }}</p>
+                {% if order.shipping_address.address_line2 %}
+                <p>{{ order.shipping_address.address_line2 }}</p>
+                {% endif %}
+                <p>{{ order.shipping_address.city }}, {{ order.shipping_address.county }}</p>
+                <p>{{ order.shipping_address.postal_code }}</p>
+                <p>Phone: {{ order.shipping_address.phone }}</p>
+            </div>
+            
+            <p>You can track your order status here:</p>
+            
+            <p style="text-align: center;">
+                <a href="{{ url_for('order_details', order_id=order._id, _external=True) }}" class="button">View Order</a>
+            </p>
+            
+            <p>If you have any questions about your order, please contact our customer service team.</p>
+        </div>
+        
+        <div class="footer">
+            <p>Best regards,<br>GlamBeauty Team</p>
+            <p>&copy; {{ current_year }} GlamBeauty. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

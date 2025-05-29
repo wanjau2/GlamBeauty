@@ -1,0 +1,75 @@
+{% extends 'user/profile.html' %}
+
+{% block profile_content %}
+<div class="card shadow-sm">
+    <div class="card-header bg-white">
+        <h4 class="mb-0">My Orders</h4>
+    </div>
+    <div class="card-body">
+        {% if orders %}
+            {% for order in orders %}
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-0">Order #{{ order._id }}</h5>
+                            <small class="text-muted">
+                                <i class="bi bi-calendar me-1"></i> {{ order.created_at.strftime('%d/%m/%Y') }}
+                            </small>
+                        </div>
+                        <span class="badge {% if order.is_delivered %}bg-success{% elif order.is_shipped %}bg-info{% elif order.is_processed %}bg-primary{% else %}bg-warning text-dark{% endif %}">
+                            {% if order.is_delivered %}
+                                Delivered
+                            {% elif order.is_shipped %}
+                                Shipped
+                            {% elif order.is_processed %}
+                                Processing
+                            {% else %}
+                                Pending
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% for item in order.items %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex align-items-center">
+                            <img src="{{ url_for('static', filename='uploads/' + item.image) }}" alt="{{ item.name }}" class="me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                            <div>
+                                <h6 class="mb-0">{{ item.name }}</h6>
+                                <small class="text-muted">Qty: {{ item.quantity }}</small>
+                            </div>
+                        </div>
+                        <span>${{ "%.2f"|format(item.total) }}</span>
+                    </div>
+                    {% endfor %}
+                    
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between">
+                        <span>Total:</span>
+                        <strong>${{ "%.2f"|format(order.total_price) }}</strong>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <a href="{{ url_for('view_order', order_id=order._id) }}" class="btn btn-outline-primary btn-sm">View Details</a>
+                        {% if not order.is_delivered and not order.is_shipped %}
+                        <a href="{{ url_for('track_order', order_id=order._id) }}" class="btn btn-outline-info btn-sm">Track Order</a>
+                        {% endif %}
+                        {% if order.is_delivered %}
+                        <a href="{{ url_for('reorder', order_id=order._id) }}" class="btn btn-outline-success btn-sm">Buy Again</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-4">
+                <i class="bi bi-box display-4 text-muted"></i>
+                <p class="mt-3">You haven't placed any orders yet.</p>
+                <a href="{{ url_for('store_index') }}" class="btn btn-primary">Start Shopping</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

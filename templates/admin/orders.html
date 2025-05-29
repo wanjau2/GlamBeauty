@@ -1,0 +1,195 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Manage Orders - GlamBeauty{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">Orders</h1>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-header bg-white">
+        <h5 class="mb-0">Filter Orders</h5>
+    </div>
+    <div class="card-body">
+        <form id="orderFilterForm" method="GET" action="{{ url_for('admin_orders') }}">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label for="dateFrom" class="form-label">Date From</label>
+                    <input type="date" class="form-control" id="dateFrom" name="date_from" value="{{ request.args.get('date_from', '') }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="dateTo" class="form-label">Date To</label>
+                    <input type="date" class="form-control" id="dateTo" name="date_to" value="{{ request.args.get('date_to', '') }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="paymentStatus" class="form-label">Payment Status</label>
+                    <select class="form-select" id="paymentStatus" name="payment_status">
+                        <option value="">All</option>
+                        <option value="paid" {% if request.args.get('payment_status') == 'paid' %}selected{% endif %}>Paid</option>
+                        <option value="pending" {% if request.args.get('payment_status') == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="failed" {% if request.args.get('payment_status') == 'failed' %}selected{% endif %}>Failed</option>
+                        <option value="refunded" {% if request.args.get('payment_status') == 'refunded' %}selected{% endif %}>Refunded</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="orderStatus" class="form-label">Order Status</label>
+                    <select class="form-select" id="orderStatus" name="order_status">
+                        <option value="">All</option>
+                        <option value="pending" {% if request.args.get('order_status') == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="processing" {% if request.args.get('order_status') == 'processing' %}selected{% endif %}>Processing</option>
+                        <option value="shipped" {% if request.args.get('order_status') == 'shipped' %}selected{% endif %}>Shipped</option>
+                        <option value="delivered" {% if request.args.get('order_status') == 'delivered' %}selected{% endif %}>Delivered</option>
+                        <option value="cancelled" {% if request.args.get('order_status') == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Apply Filters</button>
+                    <a href="{{ url_for('admin_orders') }}" class="btn btn-outline-secondary">Clear Filters</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Orders Table -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Customer</th>
+                        <th>Date</th>
+                        <th>Total</th>
+                        <th>Payment Status</th>
+                        <th>Order Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td>#{{ order._id }}</td>
+                        <td>{{ order.customer_name }}</td>
+                        <td>{{ order.created_at.strftime('%d %b %Y') }}</td>
+                        <td>${{ "%.2f"|format(order.total_amount) }}</td>
+                        <td>
+                            <span class="badge {% if order.payment_status == 'paid' %}bg-success{% elif order.payment_status == 'pending' %}bg-warning text-dark{% elif order.payment_status == 'failed' %}bg-danger{% elif order.payment_status == 'refunded' %}bg-info{% endif %}">
+                                {{ order.payment_status|capitalize }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge {% if order.status == 'delivered' %}bg-success{% elif order.status == 'shipped' %}bg-info{% elif order.status == 'processing' %}bg-primary{% elif order.status == 'cancelled' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                                {{ order.status|capitalize }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{{ url_for('admin_order_details', order_id=order._id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                                <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span class="visually-hidden">Toggle Dropdown</span>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#updateStatusModal" data-order-id="{{ order._id }}">Update Status</a></li>
+                                    <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#sendEmailModal" data-order-id="{{ order._id }}">Send Email</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item text-danger" href="#" data-bs-toggle="modal" data-bs-target="#cancelOrderModal" data-order-id="{{ order._id }}">Cancel Order</a></li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Pagination -->
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        <li class="page-item {% if not has_prev %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('admin_orders', page=page-1, **request.args) if has_prev else '#' }}">Previous</a>
+        </li>
+        {% for p in range(1, total_pages + 1) %}
+        <li class="page-item {% if p == page %}active{% endif %}">
+            <a class="page-link" href="{{ url_for('admin_orders', page=p, **request.args) }}">{{ p }}</a>
+        </li>
+        {% endfor %}
+        <li class="page-item {% if not has_next %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('admin_orders', page=page+1, **request.args) if has_next else '#' }}">Next</a>
+        </li>
+    </ul>
+</nav>
+
+<!-- Update Status Modal -->
+<div class="modal fade" id="updateStatusModal" tabindex="-1" aria-labelledby="updateStatusModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="updateStatusModalLabel">Update Order Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="updateStatusForm" method="POST" action="{{ url_for('admin_update_order_status', order_id='') }}">
+                <div class="modal-body">
+                    <input type="hidden" id="updateOrderId" name="order_id">
+                    <div class="mb-3">
+                        <label for="newStatus" class="form-label">New Status</label>
+                        <select class="form-select" id="newStatus" name="status" required>
+                            <option value="pending">Pending</option>
+                            <option value="processing">Processing</option>
+                            <option value="shipped">Shipped</option>
+                            <option value="delivered">Delivered</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="statusNote" class="form-label">Note (Optional)</label>
+                        <textarea class="form-control" id="statusNote" name="note" rows="3"></textarea>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="sendNotification" name="send_notification" checked>
+                        <label class="form-check-label" for="sendNotification">
+                            Send email notification to customer
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Status</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Update the order ID in the modal when shown
+    document.querySelectorAll('[data-bs-target="#updateStatusModal"]').forEach(button => {
+        button.addEventListener('click', function() {
+            const orderId = this.getAttribute('data-order-id');
+            document.getElementById('updateOrderId').value = orderId;
+            
+            // Update the form action URL with the correct order_id
+            const form = document.getElementById('updateStatusForm');
+            form.action = "{{ url_for('admin_orders') }}/" + orderId + "/update_status";
+        });
+    });
+    
+    // Date range validation
+    document.getElementById('orderFilterForm').addEventListener('submit', function(e) {
+        const dateFrom = document.getElementById('dateFrom').value;
+        const dateTo = document.getElementById('dateTo').value;
+        
+        if (dateFrom && dateTo && new Date(dateFrom) > new Date(dateTo)) {
+            e.preventDefault();
+            alert('Date From cannot be later than Date To');
+        }
+    });
+</script>
+{% endblock %}

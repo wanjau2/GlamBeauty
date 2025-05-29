@@ -1,0 +1,664 @@
+{% extends 'base.html' %}
+
+{% block title %}My Account - Beauty E-commerce{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Fixed Sidebar */
+    .sidebar {
+        width: 240px;
+        border-right: 1px solid rgba(0,0,0,0.1);
+    }
+    
+    @media (min-width: 992px) {
+        .sidebar {
+            height: calc(100vh - 80px);
+            position: sticky;
+            top: 80px;
+            overflow-y: auto;
+        }
+    }
+    
+    @media (max-width: 991px) {
+        .sidebar {
+            width: 100%;
+            height: auto;
+            display: flex;
+            overflow-x: auto;
+            margin-bottom: 1rem;
+            border-right: none;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            padding-bottom: 0.5rem !important;
+        }
+    }
+    
+    /* Sidebar items */
+    .sidebar-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        color: var(--bs-gray-600);
+        text-decoration: none;
+        border-radius: 0.5rem;
+        margin-bottom: 0.5rem;
+        transition: all 0.2s ease;
+    }
+    
+    .sidebar-item:hover {
+        background-color: rgba(var(--bs-primary-rgb), 0.1);
+        color: var(--bs-primary);
+    }
+    
+    .sidebar-item.active {
+        background-color: var(--bs-primary);
+        color: white;
+    }
+    
+    .sidebar-item i {
+        font-size: 1.25rem;
+        min-width: 1.5rem;
+        text-align: center;
+        margin-right: 0.75rem;
+    }
+    
+    @media (max-width: 991px) {
+        .sidebar-item {
+            flex: 1;
+            justify-content: center;
+            margin-right: 0.5rem;
+            padding: 0.5rem;
+        }
+        
+        .sidebar-item:last-child {
+            margin-right: 0;
+        }
+        
+        .sidebar-item i {
+            margin-right: 0;
+        }
+        
+        .sidebar-item span {
+            display: none;
+        }
+    }
+    
+    /* User profile section in sidebar */
+    .sidebar .user-profile {
+        text-align: center;
+        margin-bottom: 1.5rem;
+        padding: 1rem 0;
+    }
+    
+    @media (max-width: 991px) {
+        .sidebar .user-profile {
+            display: none;
+        }
+    }
+    
+    /* Tab content */
+    .tab-content {
+        display: none;
+    }
+    
+    .tab-content.active {
+        display: block;
+    }
+    
+    /* Cards */
+    .card {
+        border: none;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        border-radius: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .card-header {
+        background-color: transparent;
+        border-bottom: 1px solid rgba(0,0,0,0.1);
+        padding: 1.25rem 1.5rem;
+    }
+    
+    .card-body {
+        padding: 1.5rem;
+    }
+    
+    .card-footer {
+        background-color: transparent;
+        border-top: 1px solid rgba(0,0,0,0.1);
+        padding: 1.25rem 1.5rem;
+    }
+    
+    /* Form controls */
+    .form-control {
+        border-radius: 0.5rem;
+        padding: 0.625rem 0.75rem;
+        background-color: var(--bs-gray-100);
+        border: 1px solid var(--bs-gray-200);
+    }
+    
+    .form-control:focus {
+        box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+        border-color: var(--bs-primary);
+    }
+    
+    .form-label {
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Status badges */
+    .status-badge {
+        padding: 0.35rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    
+    .status-badge.confirmed {
+        background-color: rgba(var(--bs-primary-rgb), 0.1);
+        color: var(--bs-primary);
+    }
+    
+    .status-badge.pending {
+        background-color: rgba(var(--bs-warning-rgb), 0.1);
+        color: var(--bs-warning);
+    }
+    
+    .status-badge.completed {
+        background-color: rgba(var(--bs-success-rgb), 0.1);
+        color: var(--bs-success);
+    }
+    
+    /* Appointment and order cards */
+    .appointment-card, .order-card {
+        border-radius: 0.75rem;
+        border: 1px solid rgba(0,0,0,0.1);
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        transition: all 0.2s ease;
+    }
+    
+    .appointment-card:hover, .order-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    
+    /* Product card styles for wishlist */
+    .product-card {
+        border-radius: 0.75rem;
+        border: 1px solid rgba(0,0,0,0.1);
+        transition: all 0.2s ease;
+        overflow: hidden;
+    }
+
+    .product-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+
+    .product-card img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+    }
+    
+    /* Tab navigation */
+    .tab-nav {
+        display: flex;
+        border-bottom: 1px solid rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+    }
+    
+    .tab-nav-item {
+        padding: 0.75rem 1.25rem;
+        color: var(--bs-gray-600);
+        text-decoration: none;
+        border-bottom: 2px solid transparent;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    .tab-nav-item:hover {
+        color: var(--bs-primary);
+    }
+    
+    .tab-nav-item.active {
+        color: var(--bs-primary);
+        border-bottom-color: var(--bs-primary);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-lg-auto p-0">
+            <div class="sidebar bg-white p-3">
+                <div class="user-profile">
+                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto" style="width: 64px; height: 64px;">
+                        {{ user.name[0] }}
+                    </div>
+                    <h5 class="mt-3 mb-1">{{ user.name }}</h5>
+                    <p class="text-muted small mb-0">{{ user.email }}</p>
+                </div>
+                
+                <a href="{{ url_for('profile') }}" class="sidebar-item {% if active_tab == 'account' %}active{% endif %}" data-tab="account">
+                    <i class="bi bi-person"></i>
+                    <span>Profile</span>
+                </a>
+                <a href="{{ url_for('profile_appointments') }}" class="sidebar-item {% if active_tab == 'appointments' %}active{% endif %}" data-tab="appointments">
+                    <i class="bi bi-calendar-check"></i>
+                    <span>Appointments</span>
+                </a>
+                <a href="{{ url_for('profile_orders') }}" class="sidebar-item {% if active_tab == 'orders' %}active{% endif %}" data-tab="orders">
+                    <i class="bi bi-box"></i>
+                    <span>Orders</span>
+                </a>
+                <a href="{{ url_for('profile_wishlist') }}" class="sidebar-item {% if active_tab == 'wishlist' %}active{% endif %}" data-tab="wishlist">
+                    <i class="bi bi-bag"></i>
+                    <span>Wishlist</span>
+                </a>
+                
+                <div class="mt-auto d-none d-lg-block">
+                    <hr class="my-3">
+                    <a href="{{ url_for('logout') }}" class="sidebar-item text-danger">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span>Sign Out</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col">
+            <!-- Tab Navigation -->
+            <div class="tab-nav d-md-flex d-none">
+                <a href="{{ url_for('profile_appointments') }}" class="tab-nav-item {% if active_tab == 'appointments' %}active{% endif %}">Appointments</a>
+                <a href="{{ url_for('profile_orders') }}" class="tab-nav-item {% if active_tab == 'orders' %}active{% endif %}">Orders</a>
+                <a href="{{ url_for('profile') }}" class="tab-nav-item {% if active_tab == 'account' %}active{% endif %}">Account</a>
+                <a href="{{ url_for('profile_wishlist') }}" class="tab-nav-item {% if active_tab == 'wishlist' %}active{% endif %}">Wishlist</a>
+            </div>
+            
+            <!-- Appointments Tab -->
+            <div class="tab-content {% if active_tab == 'appointments' %}active{% endif %}" id="appointments-tab">
+                <h2 class="h3 mb-4">My Appointments</h2>
+                
+                <!-- Upcoming Appointments -->
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0">Upcoming Appointments</h4>
+                    </div>
+                    <div class="card-body">
+                        {% if upcoming_appointments %}
+                            {% for appointment in upcoming_appointments %}
+                            <div class="appointment-card">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h5 class="mb-1">{{ appointment.service_name }}</h5>
+                                        <div class="d-flex align-items-center text-muted mb-1">
+                                            <i class="bi bi-calendar me-2"></i>
+                                            <span>{{ appointment.appointment_date.strftime('%B %d, %Y') }}</span>                                        </div>
+                                        <div class="d-flex align-items-center text-muted mb-1">
+                                            <i class="bi bi-clock me-2"></i>
+                                            <span>{{ appointment.appointment_time }}</span>
+                                        </div>
+                                        <div class="d-flex align-items-center text-muted mb-1">
+                                            <i class="bi bi-geo-alt me-2"></i>
+                                            <span>{{ appointment.location_type|default('Main Salon, Nairobi') }}</span>
+                                        </div>
+                                        <div class="d-flex align-items-center text-muted">
+                                            <i class="bi bi-person me-2"></i>
+                                            <span>Stylist: {{ appointment.stylist_name|default('Any Available') }}</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        {% if appointment.is_paid %}
+                                        <span class="status-badge confirmed">Confirmed</span>
+                                        {% else %}
+                                        <span class="status-badge pending">Pending</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="d-flex mt-3">
+                                    <a href="{{ url_for('reschedule_appointment', appointment_id=appointment._id) }}" class="btn btn-outline-primary btn-sm me-2">Reschedule</a>
+                                    <a href="{{ url_for('cancel_appointment', appointment_id=appointment._id) }}" class="btn btn-outline-danger btn-sm">Cancel</a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-5">
+                                <div class="mb-3">
+                                    <i class="bi bi-calendar-x" style="font-size: 3rem; color: var(--bs-gray-400);"></i>
+                                </div>
+                                <h4 class="mb-3">No upcoming appointments</h4>
+                                <p class="text-muted mb-4">Book a service to get started</p>
+                                <a href="{{ url_for('book_appointment') }}" class="btn btn-primary">Book an Appointment</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Past Appointments -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h4 class="mb-0">Past Appointments</h4>
+                    </div>
+                    <div class="card-body">
+                        {% if past_appointments %}
+                            {% for appointment in past_appointments %}
+                            <div class="appointment-card">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h5 class="mb-1">{{ appointment.service_name }}</h5>
+                                        <div class="d-flex align-items-center text-muted mb-1">
+                                            <i class="bi bi-calendar me-2"></i>
+                                            <span>{{ appointment.appointment_date.strftime('%B %d, %Y') }}</span>                                        </div>
+                                        <div class="d-flex align-items-center text-muted mb-1">
+                                            <i class="bi bi-clock me-2"></i>
+                                            <span>{{ appointment.appointment_time }}</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span class="status-badge completed">Completed</span>
+                                    </div>
+                                </div>
+                                <div class="d-flex mt-3">
+                                    <a href="{{ url_for('book_appointment', service_id=appointment.service_id) }}" class="btn btn-outline-primary btn-sm me-2">Book Again</a>
+                                    <a href="{{ url_for('leave_review', appointment_id=appointment._id) }}" class="btn btn-outline-secondary btn-sm">Leave a Review</a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-4">
+                                <p class="text-muted">You don't have any past appointments.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Orders Tab -->
+            <div class="tab-content {% if active_tab == 'orders' %}active{% endif %}" id="orders-tab">
+                <h2 class="h3 mb-4">My Orders</h2>
+                
+                <div class="card">
+                    <div class="card-body">
+                        {% if orders %}
+                            {% for order in orders %}
+                            <div class="order-card">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h5 class="mb-1">Order #{{ order._id }}</h5>
+                                        <div class="d-flex align-items-center text-muted mb-1">
+                                            <i class="bi bi-calendar me-2"></i>
+                                            <span>{{ order.created_at.strftime('%B %d, %Y') }}</span>
+                                        </div>
+                                        <div class="d-flex align-items-center text-muted mb-1">
+                                            <i class="bi bi-box me-2"></i>
+                                            <span>{{ order.items|length }} item(s)</span>
+                                        </div>
+                                        <div class="d-flex align-items-center text-muted">
+                                            <i class="bi bi-cash me-2"></i>
+                                            <span>Total: {{ order.total|format_currency }}</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span class="status-badge {% if order.status == 'delivered' %}completed{% elif order.status == 'processing' %}confirmed{% else %}pending{% endif %}">
+                                            {{ order.status|title }}
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Order Items -->
+                                <div class="mt-3 mb-3">
+                                    <div class="small text-muted mb-2">Items:</div>
+                                    {% for item in order.items %}
+                                    <div class="d-flex justify-content-between align-items-center mb-1 ps-3">
+                                        <span>{{ item.quantity }}x {{ item.product_name }}</span>
+                                        <span>{{ item.price|format_currency }}</span>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="d-flex mt-3">
+                                    <a href="{{ url_for('order_details', order_id=order._id) }}" class="btn btn-outline-primary btn-sm me-2">View Details</a>
+                                    <a href="{{ url_for('reorder', order_id=order._id) }}" class="btn btn-primary btn-sm">Buy Again</a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-5">
+                                <div class="mb-3">
+                                    <i class="bi bi-bag" style="font-size: 3rem; color: var(--bs-gray-400);"></i>
+                                </div>
+                                <h4 class="mb-3">No orders yet</h4>
+                                <p class="text-muted mb-4">Browse our products and place your first order</p>
+                                <a href="{{ url_for('shop') }}" class="btn btn-primary">Shop Now</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Account Tab -->
+            <div class="tab-content {% if active_tab == 'account' %}active{% endif %}" id="account-tab">
+                <h2 class="h3 mb-4">Account Settings</h2>
+                
+                <!-- Personal Information Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0">Personal Information</h4>
+                        <p class="text-muted small mb-0">Update your account details and preferences.</p>
+                    </div>
+                    <div class="card-body">
+                        <form action="{{ url_for('edit_profile') }}" method="post">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6 mb-3 mb-md-0">
+                                    <label for="name" class="form-label">Full Name</label>
+                                    <input type="text" class="form-control" id="name" name="name" value="{{ user.name }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="email" class="form-label">Email Address</label>
+                                    <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6 mb-3 mb-md-0">
+                                    <label for="phone" class="form-label">Phone Number</label>
+                                    <input type="tel" class="form-control" id="phone" name="phone" value="{{ user.phone if user.phone else '' }}" placeholder="e.g. 0712345678">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="dob" class="form-label">Date of Birth</label>
+                                    <input type="date" class="form-control" id="dob" name="dob" value="{{ user.dob if user.dob else '' }}">
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Address Information Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0">Address Information</h4>
+                        <p class="text-muted small mb-0">Manage your billing and service addresses.</p>
+                    </div>
+                    <div class="card-body">
+                        <form action="{{ url_for('update_address') }}" method="post">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            
+                            <div class="mb-3">
+                                <label for="address_line1" class="form-label">Address Line 1</label>
+                                <input type="text" class="form-control" id="address_line1" name="address_line1" value="{{ user.address.line1 if user.address and user.address.line1 else '' }}" placeholder="123 Main Street">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="address_line2" class="form-label">Address Line 2</label>
+                                <input type="text" class="form-control" id="address_line2" name="address_line2" value="{{ user.address.line2 if user.address and user.address.line2 else '' }}" placeholder="Apt 4B">
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-4 mb-3 mb-md-0">
+                                    <label for="city" class="form-label">Location/Sub-county</label>
+                                    <input type="text" class="form-control" id="city" name="city" value="{{ user.address.city if user.address and user.address.city else '' }}" placeholder="Westlands">
+                                </div>
+                                <div class="col-md-4 mb-3 mb-md-0">
+                                    <label for="county" class="form-label">County</label>
+                                    <select class="form-select" id="county" name="county">
+                                        <option value="">Select County</option>
+                                        {% for county_data in AVAILABLE_LOCATIONS %}
+                                        <option value="{{ county_data.county }}" {% if user.address and user.address.county == county_data.county %}selected{% endif %}>{{ county_data.county }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="postal_code" class="form-label">Postal Code</label>
+                                    <input type="text" class="form-control" id="postal_code" name="postal_code" value="{{ user.address.postal_code if user.address and user.address.postal_code else '' }}" placeholder="00100">
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">Save Address</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Password Update Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0">Password Update</h4>
+                        <p class="text-muted small mb-0">Change your account password.</p>
+                    </div>
+                    <div class="card-body">
+                        <form action="{{ url_for('change_password') }}" method="post">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            
+                            <div class="mb-3">
+                                <label for="current_password" class="form-label">Current Password</label>
+                                <input type="password" class="form-control" id="current_password" name="current_password" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="new_password" class="form-label">New Password</label>
+                                <input type="password" class="form-control" id="new_password" name="new_password" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="confirm_password" class="form-label">Confirm New Password</label>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">Update Password</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Wishlist Tab -->
+            <div class="tab-content {% if active_tab == 'wishlist' %}active{% endif %}" id="wishlist-tab">
+                <h2 class="h3 mb-4">My Wishlist</h2>
+                
+                <div class="card">
+                    <div class="card-body">
+                        {% if wishlist_items %}
+                            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                                {% for product in wishlist_items %}
+                                <div class="col">
+                                    <div class="product-card h-100">
+                                        <div class="position-relative">
+                                            <img src="{{ product.image_url|default('/static/images/product-placeholder.jpg') }}" alt="{{ product.name }}" class="img-fluid rounded-top">
+                                            <button class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 rounded-circle" 
+                                                    onclick="removeFromWishlist('{{ product._id }}')">
+                                                <i class="bi bi-x"></i>
+                                            </button>
+                                        </div>
+                                        <div class="p-3">
+                                            <h5 class="mb-1">{{ product.name }}</h5>
+                                            <p class="text-muted mb-2">{{ product.price|format_currency }}</p>
+                                            <div class="d-flex mt-3">
+                                                <a href="{{ url_for('product_detail', product_id=product._id) }}" class="btn btn-outline-primary btn-sm me-2">View Details</a>
+                                                <a href="{{ url_for('add_to_cart', product_id=product._id) }}" class="btn btn-primary btn-sm">Add to Cart</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5">
+                                <div class="mb-3">
+                                    <i class="bi bi-heart" style="font-size: 3rem; color: var(--bs-gray-400);"></i>
+                                </div>
+                                <h4 class="mb-3">Your wishlist is empty</h4>
+                                <p class="text-muted mb-4">Browse our products and add items to your wishlist</p>
+                                <a href="{{ url_for('shop') }}" class="btn btn-primary">Browse Products</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function removeFromWishlist(productId) {
+        fetch(`/remove_from_wishlist/${productId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                // Refresh the page to show updated wishlist
+                window.location.reload();
+            }
+        })
+        .catch(error => console.error('Error removing from wishlist:', error));
+    }
+
+    // Mobile tab navigation
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add mobile tab navigation if needed
+        if (window.innerWidth < 768) {
+            const sidebarItems = document.querySelectorAll('.sidebar-item');
+            sidebarItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    // Only for mobile view
+                    if (window.innerWidth < 768) {
+                        e.preventDefault();
+                        const tabId = this.getAttribute('data-tab');
+                        
+                        // Remove active class from all sidebar items
+                        sidebarItems.forEach(i => i.classList.remove('active'));
+                        
+                        // Add active class to clicked item
+                        this.classList.add('active');
+                        
+                        // Hide all tab contents
+                        document.querySelectorAll('.tab-content').forEach(tab => {
+                            tab.classList.remove('active');
+                        });
+                        
+                        // Show selected tab content
+                        document.getElementById(tabId + '-tab').classList.add('active');
+                    }
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}

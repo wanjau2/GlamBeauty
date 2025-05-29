@@ -1,0 +1,123 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}Image Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="h3 mb-4 text-gray-800">Image Management</h1>
+    
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Upload New Image</h6>
+                </div>
+                <div class="card-body">
+                    <form id="uploadForm" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label for="imageFile">Select Image</label>
+                            <input type="file" class="form-control-file" id="imageFile" name="image" accept="image/*" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="imageCategory">Category</label>
+                            <select class="form-control" id="imageCategory" name="category">
+                                <option value="products">Products</option>
+                                <option value="banners">Banners</option>
+                                <option value="categories">Categories</option>
+                                <option value="content">Content</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Upload</button>
+                    </form>
+                    
+                    <div id="uploadResult" class="mt-3" style="display: none;">
+                        <div class="alert alert-success">
+                            Image uploaded successfully!
+                        </div>
+                        <div class="card">
+                            <img id="uploadedImage" class="card-img-top" alt="Uploaded image">
+                            <div class="card-body">
+                                <p class="card-text">Image URL: <code id="imageUrl"></code></p>
+                                <button class="btn btn-sm btn-secondary" onclick="copyImageUrl()">Copy URL</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Uploads</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row" id="recentImages">
+                        <!-- Recent images will be loaded here via JavaScript -->
+                        <div class="col-12 text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="sr-only">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Handle form submission
+        $('#uploadForm').submit(function(e) {
+            e.preventDefault();
+            
+            var formData = new FormData(this);
+            
+            $.ajax({
+                url: '{{ url_for("upload_image") }}',
+                type: 'POST',
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function(response) {
+                    $('#uploadResult').show();
+                    $('#uploadedImage').attr('src', response.url);
+                    $('#imageUrl').text(window.location.origin + response.url);
+                    loadRecentImages();
+                },
+                error: function(xhr) {
+                    var error = xhr.responseJSON ? xhr.responseJSON.error : 'Upload failed';
+                    alert('Error: ' + error);
+                }
+            });
+        });
+        
+        // Load recent images
+        loadRecentImages();
+        
+        function loadRecentImages() {
+            // In a real application, you would fetch this from the server
+            // For now, we'll just show a placeholder message
+            setTimeout(function() {
+                $('#recentImages').html('<div class="col-12 text-center py-3"><p>Image listing functionality will be implemented in a future update.</p></div>');
+            }, 1000);
+        }
+    });
+    
+    function copyImageUrl() {
+        var urlText = document.getElementById('imageUrl');
+        var range = document.createRange();
+        range.selectNode(urlText);
+        window.getSelection().removeAllRanges();
+        window.getSelection().addRange(range);
+        document.execCommand('copy');
+        window.getSelection().removeAllRanges();
+        
+        alert('Image URL copied to clipboard!');
+    }
+</script>
+{% endblock %}

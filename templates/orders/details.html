@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+
+{% block title %}Order Details - GlamBeauty{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="mb-4">
+        <a href="{{ url_for('profile') }}" class="text-decoration-none">
+            <i class="bi bi-arrow-left me-2"></i> Back to Orders
+        </a>
+    </div>
+    
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Order #{{ order._id }}</h4>
+                <span class="badge {% if order.status == 'delivered' %}bg-success{% elif order.status == 'shipped' %}bg-info{% elif order.status == 'processing' %}bg-primary{% else %}bg-warning text-dark{% endif %}">
+                    {{ order.status|capitalize }}
+                </span>
+            </div>
+            <p class="text-muted mb-0">Placed on {{ order.created_at.strftime('%d %B, %Y at %H:%M') }}</p>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 mb-4 mb-md-0">
+                    <h5>Shipping Information</h5>
+                    <p class="mb-1">{{ order.shipping_address.name }}</p>
+                    <p class="mb-1"><strong>Phone:</strong> {{ order.shipping_address.phone }}</p>
+                    <p class="mb-1">{{ order.shipping_address.address_line1 }}</p>
+                    {% if order.shipping_address.address_line2 %}
+                    <p class="mb-1">{{ order.shipping_address.address_line2 }}</p>
+                    {% endif %}
+                    <p class="mb-1">{{ order.shipping_address.city }}, {{ order.shipping_address.county }}</p>
+                    <p class="mb-1">{{ order.shipping_address.postal_code }}</p>
+                </div>
+                <div class="col-md-6">
+                    <h5>Payment Information</h5>
+                    <p class="mb-1">Method: {{ order.payment_method|replace('_', ' ')|capitalize }}</p>
+                    <p class="mb-1">Status: 
+                        {% if order.is_paid %}
+                            <span class="text-success">Paid</span>
+                            {% if order.paid_at %}
+                                on {{ order.paid_at.strftime('%d %B, %Y') }}
+                            {% endif %}
+                        {% else %}
+                            <span class="text-danger">Pending Payment</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            
+            <hr>
+            
+            <h5>Order Items</h5>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Price</th>
+                            <th>Quantity</th>
+                            <th class="text-end">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in order.items %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% if item.image %}
+                                    <img src="{{ url_for('static', filename='uploads/' + item.image) }}" alt="{{ item.name }}" class="me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                                    {% else %}
+                                    <div class="bg-light me-3" style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;">
+                                        <i class="bi bi-box"></i>
+                                    </div>
+                                    {% endif %}
+                                    <div>{{ item.name }}</div>
+                                </div>
+                            </td>
+                            <td>{{ format_price(item.price, order.currency) }}</td>
+                            <td>{{ item.quantity }}</td>
+                            <td class="text-end">{{ format_price(item.price * item.quantity, order.currency) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3" class="text-end">Subtotal:</td>
+                            <td class="text-end">{{ format_price(order.subtotal, order.currency) }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="3" class="text-end">Shipping:</td>
+                            <td class="text-end">{{ format_price(order.shipping_fee, order.currency) }}</td>
+                        </tr>
+                        {% if order.tax %}
+                        <tr>
+                            <td colspan="3" class="text-end">Tax:</td>
+                            <td class="text-end">{{ format_price(order.tax, order.currency) }}</td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                            <td class="text-end"><strong>{{ format_price(order.total, order.currency) }}</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            
+            {% if order.status == 'delivered' %}
+            <div class="alert alert-success mt-3">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                Your order was delivered on {{ order.delivered_at.strftime('%d %B, %Y') }}.
+            </div>
+            {% elif order.status == 'shipped' %}
+            <div class="alert alert-info mt-3">
+                <i class="bi bi-truck me-2"></i>
+                Your order was shipped on {{ order.shipped_at.strftime('%d %B, %Y') }}.
+                {% if order.tracking_number %}
+                <p class="mb-0 mt-2">Tracking Number: {{ order.tracking_number }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            <div class="d-flex mt-4">
+                {% if order.status != 'delivered' and order.status != 'cancelled' %}
+                <a href="#" class="btn btn-outline-primary me-2">Track Order</a>
+                {% endif %}
+                
+                {% if order.status == 'delivered' %}
+                <a href="{{ url_for('reorder', order_id=order._id) }}" class="btn btn-primary me-2">Buy Again</a>
+                {% endif %}
+                
+                <a href="#" class="btn btn-outline-secondary">Contact Support</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    
+    .timeline::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 9px;
+        width: 2px;
+        background-color: #e9ecef;
+    }
+    
+    .timeline-item {
+        position: relative;
+        padding-bottom: 1.5rem;
+    }
+    
+    .timeline-item:last-child {
+        padding-bottom: 0;
+    }
+    
+    .timeline-marker {
+        position: absolute;
+        left: -30px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background-color: #e9ecef;
+        border: 2px solid white;
+    }
+    
+    .timeline-marker.active {
+        background-color: var(--primary);
+    }
+    
+    .timeline-content {
+        padding-left: 10px;
+    }
+</style>
+{% endblock %}
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-white">
+        <h5 class="mb-0">Order Status History</h5>
+    </div>
+    <div class="card-body">
+        <div class="timeline">
+            {% for status_change in order.status_history %}
+            <div class="timeline-item">
+                <div class="timeline-marker {% if loop.first %}active{% endif %}"></div>
+                <div class="timeline-content">
+                    <h6 class="mb-0">{{ status_change.status|capitalize }}</h6>
+                    <p class="text-muted small mb-0">{{ status_change.timestamp.strftime('%d %B, %Y at %H:%M') }}</p>
+                    {% if status_change.note %}
+                    <p class="mb-0 mt-1">{{ status_change.note }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>

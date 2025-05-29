@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+
+{% block title %}Order Confirmation - GlamBeauty{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-body text-center p-5">
+                    <div class="mb-4">
+                        <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
+                    </div>
+                    <h1 class="mb-4">Thank You for Your Order!</h1>
+                    <p class="lead mb-4">Your order has been placed successfully.</p>
+                    
+                    <div class="order-details mb-4">
+                        <div class="row">
+                            <div class="col-md-6 text-md-end">
+                                <p><strong>Order Number:</strong></p>
+                            </div>
+                            <div class="col-md-6 text-md-start">
+                                <p>{{ order._id }}</p>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 text-md-end">
+                                <p><strong>Order Date:</strong></p>
+                            </div>
+                            <div class="col-md-6 text-md-start">
+                                <p>{{ order.created_at.strftime('%B %d, %Y') }}</p>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 text-md-end">
+                                <p><strong>Total Amount:</strong></p>
+                            </div>
+                            <div class="col-md-6 text-md-start">
+                                <p>${{ "%.2f"|format(order.total_price) }}</p>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 text-md-end">
+                                <p><strong>Payment Method:</strong></p>
+                            </div>
+                            <div class="col-md-6 text-md-start">
+                                <p>{{ order.payment_method|title }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <p class="mb-4">A confirmation email has been sent to your email address.</p>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                        <a href="{{ url_for('order_details', order_id=order._id) }}" class="btn btn-primary">
+                            <i class="bi bi-eye me-2"></i>View Order Details
+                        </a>
+                        <a href="{{ url_for('store_index') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-shop me-2"></i>Continue Shopping
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-4 shadow-sm">
+                <div class="card-body">
+                    <h3 class="card-title">Order Tracking</h3>
+                    <div class="order-timeline mt-4">
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-success"></div>
+                            <div class="timeline-content">
+                                <h4>Order Placed</h4>
+                                <p class="text-muted">{{ order.created_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-marker {% if order.is_paid %}bg-success{% else %}bg-secondary{% endif %}"></div>
+                            <div class="timeline-content">
+                                <h4>Payment {% if order.is_paid %}Completed{% else %}Pending{% endif %}</h4>
+                                {% if order.is_paid and order.paid_at %}
+                                <p class="text-muted">{{ order.paid_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                                {% else %}
+                                <p class="text-muted">Awaiting payment</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-marker {% if order.is_processed %}bg-success{% else %}bg-secondary{% endif %}"></div>
+                            <div class="timeline-content">
+                                <h4>Processing</h4>
+                                {% if order.is_processed and order.processed_at %}
+                                <p class="text-muted">{{ order.processed_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                                {% else %}
+                                <p class="text-muted">Your order will be processed soon</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-marker {% if order.is_shipped %}bg-success{% else %}bg-secondary{% endif %}"></div>
+                            <div class="timeline-content">
+                                <h4>Shipped</h4>
+                                {% if order.is_shipped and order.shipped_at %}
+                                <p class="text-muted">{{ order.shipped_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                                {% else %}
+                                <p class="text-muted">Your order will be shipped soon</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-marker {% if order.is_delivered %}bg-success{% else %}bg-secondary{% endif %}"></div>
+                            <div class="timeline-content">
+                                <h4>Delivered</h4>
+                                {% if order.is_delivered and order.delivered_at %}
+                                <p class="text-muted">{{ order.delivered_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                                {% else %}
+                                <p class="text-muted">Estimated delivery in 3-5 business days</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .order-timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    
+    .timeline-item {
+        position: relative;
+        padding-bottom: 30px;
+    }
+    
+    .timeline-item:last-child {
+        padding-bottom: 0;
+    }
+    
+    .timeline-marker {
+        position: absolute;
+        left: -30px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+    }
+    
+    .timeline-item:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        left: -20px;
+        top: 20px;
+        height: calc(100% - 20px);
+        width: 2px;
+        background-color: #dee2e6;
+    }
+    
+    .timeline-content {
+        margin-bottom: 10px;
+    }
+    
+    .timeline-content h4 {
+        margin-bottom: 5px;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+
+{% block title %}Frequently Asked Questions - GlamBeauty{% endblock %}
+
+{% block extra_css %}
+<style>
+    .faqs-header {
+        text-align: center;
+        padding: 3rem 0;
+    }
+    
+    .faqs-title {
+        font-size: 2.5rem;
+        color: #333;
+        margin-bottom: 1rem;
+    }
+    
+    .faq-item {
+        border-bottom: 1px solid #eee;
+        margin-bottom: 1rem;
+    }
+    
+    .faq-question {
+        font-weight: 500;
+        color: #333;
+        padding: 1.5rem 0;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.3s ease;
+    }
+    
+    .faq-question:hover {
+        color: #e97fa3;
+    }
+    
+    .faq-question.active {
+        color: #e97fa3;
+    }
+    
+    .faq-answer {
+        padding-bottom: 1.5rem;
+        color: #666;
+        line-height: 1.6;
+    }
+    
+    .faq-icon {
+        transition: transform 0.3s ease;
+    }
+    
+    .faq-question.active .faq-icon {
+        transform: rotate(180deg);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="faqs-header">
+        <h1 class="faqs-title">Frequently Asked Questions</h1>
+    </div>
+    
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <h3>What services do you offer?</h3>
+                    <span class="faq-icon">
+                        <i class="bi bi-chevron-down"></i>
+                    </span>
+                </div>
+                <div class="faq-answer" style="display: none;">
+                    <p>We offer a wide range of beauty services including hair styling, nail services, makeup application, lash extensions, henna art, and comprehensive beauty packages. Our professional team is trained to provide high-quality services tailored to your specific needs and preferences.</p>
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <h3>Do you offer home services?</h3>
+                    <span class="faq-icon">
+                        <i class="bi bi-chevron-down"></i>
+                    </span>
+                </div>
+                <div class="faq-answer" style="display: none;">
+                    <p>Yes, we offer home services for select treatments. Our mobile beauty professionals can come to your location for added convenience. Please note that home services require booking at least 48 hours in advance and may include an additional travel fee depending on your location.</p>
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <h3>What is your cancellation policy?</h3>
+                    <span class="faq-icon">
+                        <i class="bi bi-chevron-down"></i>
+                    </span>
+                </div>
+                <div class="faq-answer" style="display: none;">
+                    <p>Appointments must be canceled or rescheduled at least 24 hours in advance. Late cancellations or no-shows may result in a cancellation fee of 50% of the service price. We understand that emergencies happen, so please contact us as soon as possible if you need to make changes to your appointment.</p>
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <h3>How can I book an appointment?</h3>
+                    <span class="faq-icon">
+                        <i class="bi bi-chevron-down"></i>
+                    </span>
+                </div>
+                <div class="faq-answer" style="display: none;">
+                    <p>You can book an appointment through our website by visiting the "Book Now" page, selecting your desired service, choosing an available date and time, and completing the booking form. Alternatively, you can call us directly at +1 (123) 456-7890 or email us at info@glambeauty.com to schedule your appointment.</p>
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <h3>What payment methods do you accept?</h3>
+                    <span class="faq-icon">
+                        <i class="bi bi-chevron-down"></i>
+                    </span>
+                </div>
+                <div class="faq-answer" style="display: none;">
+                    <p>We accept all major credit cards (Visa, MasterCard, American Express, Discover), debit cards, PayPal, and cash payments. For online bookings, a credit card is required to secure your appointment, but you can choose your preferred payment method when you arrive for your service.</p>
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <h3>Do you offer gift cards?</h3>
+                    <span class="faq-icon">
+                        <i class="bi bi-chevron-down"></i>
+                    </span>
+                </div>
+                <div class="faq-answer" style="display: none;">
+                    <p>Yes, we offer digital and physical gift cards in various denominations. Gift cards can be purchased online through our website or in-person at our salon. They make perfect gifts for birthdays, anniversaries, holidays, or any special occasion.</p>
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <h3>What is your return policy for products?</h3>
+                    <span class="faq-icon">
+                        <i class="bi bi-chevron-down"></i>
+                    </span>
+                </div>
+                <div class="faq-answer" style="display: none;">
+                    <p>We accept returns of unused and unopened products within 14 days of purchase with the original receipt. For hygiene reasons, we cannot accept returns on opened products. If you're unsatisfied with a product, please contact our customer service team, and we'll do our best to find a suitable solution.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function toggleFaq(element) {
+        // Toggle active class on question
+        element.classList.toggle('active');
+        
+        // Toggle display of answer
+        const answer = element.nextElementSibling;
+        if (answer.style.display === 'none') {
+            answer.style.display = 'block';
+        } else {
+            answer.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}
